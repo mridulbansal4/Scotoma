@@ -61,6 +61,12 @@ export default function SocPage() {
               value={latency.data.targets.inline_total_ms}
               source="target"
             />
+            <LatencyFigure
+              label="HyperLogLog feature lookup"
+              value={latency.data.feature_lookup?.p99_ms ?? latency.data.feature_lookup?.target_ms ?? 0}
+              source={latency.data.feature_lookup?.source === 'measured' ? 'measured' : 'unavailable'}
+              note={latency.data.feature_lookup?.reason}
+            />
             <p className="text-data" style={{ color: 'var(--slate-gray)' }}>
               {latency.data.iterations.toLocaleString()} single-row scoring calls on {latency.data.host},
               first {latency.data.warmup} discarded.

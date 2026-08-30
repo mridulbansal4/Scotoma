@@ -1,8 +1,10 @@
-data/
+data/*
+!data/.gitkeep
 .venv/
 node_modules/
 __pycache__/
 *.pyc
 .pytest_cache/
-.next/
+.ruff_cache/
+web/.next/
 web/node_modules/

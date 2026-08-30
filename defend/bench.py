@@ -26,6 +26,10 @@ BENCH_WARMUP: int = 500
 PERCENTILES: tuple[int, ...] = (50, 95, 99)
 MILLISECONDS_PER_SECOND: float = 1000.0
 SESSION_THREADS: int = 1
+HLL_BENCH_PREFIX: str = "hll:bench:device"
+HLL_SEED_VALUES: int = 4096
+HLL_BENCH_ITERATIONS: int = 2_000
+REDIS_CONNECT_TIMEOUT_S: float = 2.0
 
 
 def load_session(model_path: str) -> onnxruntime.InferenceSession:
@@ -61,6 +65,45 @@ def digest_of(payload: str) -> str:
 
 def feature_lookup(client: redis.Redis, key: str) -> int:
     return int(client.pfcount(key))
+
+
+def benchmark_feature_lookup(url: str, iterations: int, warmup: int) -> dict:
+    """Measure a HyperLogLog distinct-count lookup, or report that it could not be measured.
+
+    A counter costs 12 KB at roughly 0.81% standard error, which is why the distinct-PAN
+    feature family is served this way rather than from an exact set. If Redis is not
+    reachable the path reports unavailable: an unmeasured number would breach the same rule
+    every other latency figure here obeys."""
+    key = f"{HLL_BENCH_PREFIX}:{int(time.time())}"
+    try:
+        client = redis.Redis.from_url(url, socket_connect_timeout=REDIS_CONNECT_TIMEOUT_S)
+        client.ping()
+        for index in range(HLL_SEED_VALUES):
+            client.pfadd(key, f"tok_{index:016x}")
+        samples = np.empty(iterations, dtype="float64")
+        for index in range(iterations + warmup):
+            started = time.perf_counter()
+            feature_lookup(client, key)
+            elapsed = (time.perf_counter() - started) * MILLISECONDS_PER_SECOND
+            if index >= warmup:
+                samples[index - warmup] = elapsed
+        client.delete(key)
+    except (redis.RedisError, OSError) as exc:
+        return {
+            "source": "unavailable",
+            "reason": f"redis unreachable: {type(exc).__name__}",
+            "target_ms": LATENCY_TARGET_FEATURE_LOOKUP_MS,
+        }
+    measurement = _percentiles(samples)
+    measurement.update(
+        {
+            "source": "measured",
+            "iterations": iterations,
+            "seeded_values": HLL_SEED_VALUES,
+            "target_ms": LATENCY_TARGET_FEATURE_LOOKUP_MS,
+        }
+    )
+    return measurement
 
 
 def _percentiles(samples: np.ndarray) -> dict[str, float]:

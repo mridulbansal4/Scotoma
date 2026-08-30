@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 from api import events as sse
-from defend.bench import run_benchmark
+from defend.bench import HLL_BENCH_ITERATIONS, benchmark_feature_lookup, run_benchmark
 from defend.ensemble import ARTIFACTS_DIR, MODEL_FILENAME, Detector
 from defend.explain import background_sample, reason_dictionary_payload, shap_values, top_reasons
 from defend.features import FEATURE_NAMES, FeatureContext, compute_features
@@ -795,6 +795,9 @@ def _benchmark(context: LoopContext) -> dict:
         platt_coefficients(context.detector.channel_a.model),
     )
     measurement["host"] = host_description()
+    measurement["feature_lookup"] = benchmark_feature_lookup(
+        context.config.redis_url, HLL_BENCH_ITERATIONS, context.config.bench_warmup
+    )
     return measurement
 
 

@@ -1,6 +1,7 @@
 """The three-channel detector: stacking, the graph-channel kill rule, and the
 disjointness assertions that protect the blind holdout."""
 
+import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -36,6 +37,7 @@ RECALL_AT_PRECISION: float = 0.95
 ARTIFACTS_DIR: Path = Path(__file__).resolve().parent.parent / "artifacts"
 MODEL_FILENAME: str = "model.onnx"
 THRESHOLD_FILENAME: str = "threshold.json"
+REASON_DICTIONARY_FILENAME: str = "reason_dictionary.json"
 
 
 def keeps_graph_channel(lift: float, minimum: float) -> bool:
@@ -333,6 +335,9 @@ class Detector:
         )
 
     def export_onnx(self, path: Path | None = None) -> Path:
+        """The frozen artefacts a clean clone needs to score an event without a pipeline run."""
+        from defend.explain import reason_dictionary_payload
+
         target = path or ARTIFACTS_DIR / MODEL_FILENAME
         exported = export_onnx(self.channel_a, target)
         write_threshold_artifact(
@@ -341,5 +346,8 @@ class Detector:
             platt_coefficients(self.channel_a.model),
             list(FEATURE_NAMES),
             band_boundaries(),
+        )
+        (target.parent / REASON_DICTIONARY_FILENAME).write_text(
+            json.dumps(reason_dictionary_payload(), indent=2, sort_keys=True), encoding="utf-8"
         )
         return exported

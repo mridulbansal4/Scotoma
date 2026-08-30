@@ -227,6 +227,14 @@ export interface Latency {
   warmup: number;
   host: string;
   targets: Record<string, number>;
+  feature_lookup: {
+    source: 'measured' | 'unavailable';
+    reason?: string;
+    target_ms: number;
+    p50_ms?: number;
+    p95_ms?: number;
+    p99_ms?: number;
+  };
 }
 
 export interface GnnResult {

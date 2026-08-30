@@ -110,7 +110,10 @@ Run artefacts under `runs/<run_id>/` are the only source of results. No artefact
 5. The blind holdout is one attack family and one entity cohort from the same generator with
    divergent parameters. It is not an independently generated holdout.
 6. Latency figures are measured on a single developer machine at batch size one. They are a
-   feasibility signal, not a production benchmark.
+   feasibility signal, not a production benchmark. The HyperLogLog feature-lookup path is built
+   and benchmarked, but Redis was not reachable on the machine that produced the committed run,
+   so `latency.json` reports that path as `unavailable` rather than carrying a number nobody
+   measured. Start Redis and re-run `make bench` to fill it in.
 7. The loop measures and shrinks blind spots. It does not claim to make anyone monotonically safer.
 8. The agentic rail is deliberately over-sampled relative to real-world volume because it is the
    novelty surface. It is excluded from any population-level prevalence claim.

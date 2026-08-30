@@ -1,0 +1,1 @@
+{"data": {"agent_mode": "offline", "per_vector_recall": {"V02": 0.0, "V06": 1.0, "V20": 1.0, "V22": 0.0, "V31": 0.0}, "round": 0, "run_id": "smoke-test", "threshold": 0.007, "top_shap_features": ["device_age_hours", "cnt_agent_id_7d", "amtstd_agent_id_7d"], "ts": "2026-08-30T12:22:38.009310+00:00"}, "event": "round_start"}
