@@ -73,7 +73,10 @@ def fixture_world() -> World:
     blind_parts = [partition.blind_events]
     for vector_id in blind_vectors:
         campaign = INJECTORS[vector_id]().inject(
-            population, dict(DEFAULT_PARAMS[vector_id]), window, rng_for(f"pytest:blind:{vector_id}")
+            population,
+            dict(DEFAULT_PARAMS[vector_id]),
+            window,
+            rng_for(f"pytest:blind:{vector_id}"),
         )
         blind_parts.append(
             budgeted_campaign(

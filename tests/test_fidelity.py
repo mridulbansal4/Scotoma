@@ -7,7 +7,8 @@ import pytest
 from fidelity.ablation import run_ablation
 from fidelity.behavioral import STRUCTURAL_FAILURE_MULTIPLE
 from fidelity.gate import ROTATED_LAYERS, run_gate
-from fidelity.privacy import INSUFFICIENT_DATA, evaluate as privacy_evaluate
+from fidelity.privacy import INSUFFICIENT_DATA
+from fidelity.privacy import evaluate as privacy_evaluate
 from loop.controller import _carrier_entities, _split_reference_and_carrier
 from runtime.seeding import rng_for
 from tests import fixture_world
@@ -31,7 +32,9 @@ def _clean_batch():
     size = min(len(carrier), int(len(fraud) * CARRIER_MULTIPLIER))
     carried = _carrier_entities(carrier, size, rng_for("pytest:carrier"))
     batch = (
-        pd.concat([carried, fraud], ignore_index=True).sort_values("event_ts").reset_index(drop=True)
+        pd.concat([carried, fraud], ignore_index=True)
+        .sort_values("event_ts")
+        .reset_index(drop=True)
     )
     return world, batch, reference
 
@@ -69,7 +72,9 @@ def test_duplicated_row_fails_privacy() -> None:
     world, _, reference = _partitions()
     rng = rng_for("pytest:duplicates")
     carrier = world.pool[~world.pool["is_fraud"]].reset_index(drop=True)
-    copies = reference.iloc[rng.choice(len(reference), size=int(len(reference) * DUPLICATE_FRACTION))]
+    copies = reference.iloc[
+        rng.choice(len(reference), size=int(len(reference) * DUPLICATE_FRACTION))
+    ]
     batch = pd.concat([carrier.head(len(reference)), copies], ignore_index=True)
     layer = privacy_evaluate(batch, reference, world.config)
     assert layer.metrics["min_dcr"] == pytest.approx(0.0, abs=1e-12)
@@ -110,4 +115,7 @@ def test_structural_collapse_sets_the_composite() -> None:
 
     layer = behavioral_evaluate(shuffled, reference, world.config)
     assert layer.passed is False
-    assert layer.metrics["composite"] >= world.config.fidelity_behavioral_max * STRUCTURAL_FAILURE_MULTIPLE
+    assert (
+        layer.metrics["composite"]
+        >= world.config.fidelity_behavioral_max * STRUCTURAL_FAILURE_MULTIPLE
+    )

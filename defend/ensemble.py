@@ -38,6 +38,11 @@ MODEL_FILENAME: str = "model.onnx"
 THRESHOLD_FILENAME: str = "threshold.json"
 
 
+def keeps_graph_channel(lift: float, minimum: float) -> bool:
+    """Three absolute PR-AUC points, not three percent: 0.72 to 0.75, not 0.72 to 0.7416."""
+    return lift >= minimum
+
+
 @dataclass(frozen=True)
 class DetectorState:
     threshold: float
@@ -122,8 +127,9 @@ class Detector:
             raise BlindHoldoutLeak("blind cohort payer entities intersect the training pool")
 
     def design(self, frame: pd.DataFrame) -> pd.DataFrame:
-        feature_columns(frame)
-        return compute_features(frame, self.context)
+        features = compute_features(frame, self.context)
+        feature_columns(features)
+        return features
 
     def fit(self, pool: pd.DataFrame, blind: pd.DataFrame | None = None) -> "Detector":
         self.assert_blind_disjoint(pool, blind)
@@ -202,10 +208,9 @@ class Detector:
         combined = average_precision_score(
             validation_y, 0.5 * (channel_scores["gbdt"] + graph_scores)
         )
-        # Three absolute PR-AUC points, not three percent.
         lift = float(combined - baseline)
         self.gnn_measured_lift = lift
-        if lift >= self.config.gnn_min_lift_prauc:
+        if keeps_graph_channel(lift, self.config.gnn_min_lift_prauc):
             self.channel_b = candidate
             self.gnn_enabled = True
             channel_scores["graph"] = graph_scores

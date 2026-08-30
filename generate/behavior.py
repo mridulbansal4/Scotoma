@@ -73,15 +73,15 @@ EMISSION_CHUNK_ROWS: int = 400_000
 # A cardholder transacts in sessions: a basket split, a retry, a second item minutes later.
 # Sessions are what give within-entity inter-event times their positive lag-1
 # autocorrelation, which is the structure a row-independent generator cannot reproduce.
-SESSION_RATE: float = 0.34
-SESSION_EXTRA_MEAN: float = 1.6
+SESSION_RATE: float = 0.38
+SESSION_EXTRA_MEAN: float = 3.2
 SESSION_GAP_SECONDS: float = 220.0
-SESSION_MAX_EXTRA: int = 6
+SESSION_MAX_EXTRA: int = 9
 # Spend intensity drifts from week to week: a busy stretch, then a quiet one. That slow
 # persistence is what makes consecutive within-entity gaps similar in scale, and so is
 # what puts the lag-1 inter-event-time autocorrelation above zero.
-ACTIVITY_BLOCK_DAYS: float = 7.0
-ACTIVITY_PERSISTENCE: float = 0.88
+ACTIVITY_BLOCK_DAYS: float = 3.0
+ACTIVITY_PERSISTENCE: float = 0.94
 ACTIVITY_SIGMA: float = 0.9
 
 SCA_EXEMPT_REASONS: tuple[str, ...] = (

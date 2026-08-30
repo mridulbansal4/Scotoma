@@ -18,6 +18,7 @@ from defend.features import FEATURE_NAMES, FeatureContext, compute_features
 from defend.gbdt import platt_coefficients
 from defend.ladder import action_for_band, band_for_score
 from defend.scopes import collapse_flags, evaluate_all_scopes
+from defend.split import TRAIN_END_DAY
 from fidelity.ablation import run_ablation
 from fidelity.gate import run_gate
 from generate.behavior import emit_legitimate, simulation_window
@@ -87,6 +88,7 @@ class LoopContext:
     blind_events: pd.DataFrame
     reference: pd.DataFrame
     carrier: pd.DataFrame
+    evaluation_legit: pd.DataFrame
     detector: Detector
     metrics: RoundMetrics
     context: FeatureContext
@@ -164,6 +166,7 @@ def bootstrap(config: PayLoopConfig) -> LoopContext:
     )
 
     reference, carrier = _split_reference_and_carrier(partition.pool_events)
+    evaluation_legit = _evaluation_window(partition.pool_events)
 
     context_features = build_feature_context(population, partition.pool_events)
     pool = _seed_pool(population, partition.pool_events, window, config)
@@ -185,11 +188,24 @@ def bootstrap(config: PayLoopConfig) -> LoopContext:
         blind_events=blind_events,
         reference=reference,
         carrier=carrier,
+        evaluation_legit=evaluation_legit,
         detector=detector,
         metrics=RoundMetrics(run_id, round(coverage_pct, 4), config.red_agent_mode),
         context=context_features,
         agent_mode=config.red_agent_mode,
     )
+
+
+def _evaluation_window(legit: pd.DataFrame) -> pd.DataFrame:
+    """Legitimate traffic after the temporal split boundary.
+
+    Scoring a round's campaigns against legitimate rows the model was fitted on inflates
+    PR-AUC to near one and makes the false-positive rate meaningless: the detector has
+    memorised those rows. The evaluation window is the only legitimate traffic the model
+    has never seen."""
+    boundary = pd.Timestamp(SIM_START) + pd.Timedelta(days=TRAIN_END_DAY)
+    held = legit[pd.to_datetime(legit["event_ts"], utc=True) >= boundary]
+    return held.reset_index(drop=True)
 
 
 def _split_reference_and_carrier(legit: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -480,7 +496,10 @@ def run_round(context: LoopContext, round_index: int) -> dict:
 
 def finalise(context: LoopContext) -> dict:
     run_id = context.run_id
-    evaluation_frame = pd.concat([context.pool, context.blind_events], ignore_index=True)
+    evaluation_frame = pd.concat(
+        [context.evaluation_legit, _pool_campaigns(context), context.blind_events],
+        ignore_index=True,
+    )
 
     scope_matrix = evaluate_all_scopes(context.pool, context.config, context.context)
     write_json(
@@ -489,7 +508,11 @@ def finalise(context: LoopContext) -> dict:
         {"matrix": scope_matrix, "collapse": collapse_flags(scope_matrix)},
     )
 
-    active = context.detector.evaluate(context.pool)
+    active = context.detector.evaluate(
+        pd.concat([context.evaluation_legit, _pool_campaigns(context)], ignore_index=True)
+        .sort_values("event_ts")
+        .reset_index(drop=True)
+    )
     blind = context.detector.evaluate(context.blind_events)
     per_vector = {**active.per_vector_recall, **blind.per_vector_recall}
     write_json(
@@ -556,6 +579,10 @@ def finalise(context: LoopContext) -> dict:
         "gnn": gnn,
         "ablation_passed": ablation_result.passed,
     }
+
+
+def _pool_campaigns(context: LoopContext) -> pd.DataFrame:
+    return context.pool[context.pool["is_fraud"]].reset_index(drop=True)
 
 
 def _reason_payload(context: LoopContext) -> dict:

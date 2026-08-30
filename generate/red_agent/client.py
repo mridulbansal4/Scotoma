@@ -68,7 +68,7 @@ def propose(state, schemas: dict[str, dict], k: int = 6) -> list[Proposal]:
                 tool_choice={"type": "tool", "name": TOOL_NAME},
                 messages=messages,
             )
-        except Exception as exc:  # noqa: BLE001 - the SDK raises a wide transport hierarchy
+        except (anthropic.APIError, OSError, ValueError) as exc:
             raise RedAgentUnavailable(f"anthropic call failed: {exc}") from exc
 
         for block in response.content:

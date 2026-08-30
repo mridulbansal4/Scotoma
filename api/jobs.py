@@ -8,6 +8,7 @@ from uuid import UUID
 
 from redis.exceptions import RedisError
 from rq import Queue
+from rq.exceptions import NoSuchJobError
 from rq.job import Job
 
 from runtime.errors import WarehouseUnavailable
@@ -67,9 +68,9 @@ def enqueue(function_path: str, payload: dict, timeout: float = SIMULATION_TIMEO
 def fetch(task_id: UUID) -> JobRecord:
     try:
         job = Job.fetch(str(task_id), connection=redis_client())
-    except (RedisError, Exception) as exc:  # noqa: BLE001 - rq raises NoSuchJobError
-        if isinstance(exc, RedisError):
-            raise WarehouseUnavailable(f"redis unreachable: {exc}") from exc
+    except RedisError as exc:
+        raise WarehouseUnavailable(f"redis unreachable: {exc}") from exc
+    except NoSuchJobError as exc:
         raise JobNotFound(str(task_id)) from exc
     status = RQ_STATUS_MAP.get(job.get_status(refresh=True), "QUEUED")
     return JobRecord(

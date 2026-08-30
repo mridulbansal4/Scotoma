@@ -272,13 +272,15 @@ def validate_frame(frame: pd.DataFrame, strict: bool = True) -> pd.DataFrame:
 
 
 def feature_columns(frame: pd.DataFrame) -> list[str]:
-    """Raw identifiers are legal as aggregation keys and illegal as features."""
+    """Assert that a computed feature frame carries no labels and no raw identifiers.
+
+    Raw identifiers are legal as aggregation keys and illegal as features, so this runs on
+    the feature frame rather than on the event frame it was derived from."""
     banned = LABEL_COLUMNS | IDENTIFIER_COLUMNS
-    selected = [c for c in frame.columns if c not in banned]
-    leaked = set(selected) & banned
+    leaked = set(frame.columns) & banned
     if leaked:
         raise FeatureLeakage(f"label or raw identifier in feature set: {sorted(leaked)}")
-    return selected
+    return list(frame.columns)
 
 
 def apply_label_embargo(frame: pd.DataFrame, cutoff_ts: datetime) -> pd.DataFrame:

@@ -5,6 +5,7 @@ import pandas as pd
 import powerlaw
 from scipy.stats import kurtosis
 
+from fidelity.behavioral import lag1_iet_autocorrelation
 from fidelity.marginal import BENFORD_CHI2_MAX, BENFORD_EXPECTED, benford_statistics, first_digits
 from generate.declines import mix_for
 from runtime.seeding import rng_for
@@ -96,19 +97,10 @@ def test_de39_decline_mix() -> None:
 
 def test_within_entity_iet_autocorrelation() -> None:
     """The direct demonstration that the simulator produces the positive within-entity
-    autocorrelation row-independent generators provably cannot."""
+    autocorrelation row-independent generators provably cannot. Same statistic the
+    behavioural fidelity layer reads, so there is one definition of it in the project."""
     world = fixture_world()
-    working = world.legit[["pan_token", "event_ts"]].dropna().sort_values("event_ts")
-    deltas = working.groupby("pan_token", sort=False)["event_ts"].diff().dt.total_seconds()
-    working = working.assign(iet=deltas).dropna(subset=["iet"])
-    correlations = []
-    for _, group in working.groupby("pan_token", sort=False):
-        series = group["iet"].to_numpy("float64")
-        if series.size < MIN_EVENTS_PER_ENTITY or np.std(series) == 0.0:
-            continue
-        correlations.append(float(np.corrcoef(series[:-1], series[1:])[0, 1]))
-    finite = [value for value in correlations if np.isfinite(value)]
-    assert float(np.mean(finite)) > 0.0
+    assert lag1_iet_autocorrelation(world.legit, "pan_token") > 0.0
 
 
 def test_fraud_burstiness() -> None:

@@ -26,29 +26,40 @@ def _iet_std_by_key(frame: pd.DataFrame, key: str) -> float:
     return float(deltas.std(skipna=True))
 
 
-def _lag1_autocorrelation(frame: pd.DataFrame, key: str) -> float:
-    """Within-entity lag-1 inter-event-time autocorrelation, averaged over entities with
-    enough events. Row-independent generators cannot produce a positive value here."""
+def lag1_iet_autocorrelation(frame: pd.DataFrame, key: str) -> float:
+    """Within-entity lag-1 autocorrelation of log inter-event times.
+
+    Taken on the log scale because inter-event times are heavy-tailed: on the raw scale a
+    single multi-day gap dominates the covariance and the statistic stops describing rate
+    persistence at all. Weighted by the number of gaps each entity contributes, so a crowd
+    of barely-observed entities cannot outvote the sequences that carry the structure."""
     if key not in frame.columns:
         return 0.0
     working = frame[[key, "event_ts"]].dropna().sort_values("event_ts")
     deltas = working.groupby(key, sort=False)["event_ts"].diff().dt.total_seconds()
     working = working.assign(iet=deltas).dropna(subset=["iet"])
+    working = working[working["iet"] > 0.0]
     correlations: list[float] = []
+    weights: list[float] = []
     for _, group in working.groupby(key, sort=False):
-        series = group["iet"].to_numpy("float64")
+        series = np.log(group["iet"].to_numpy("float64"))
         if series.size < MIN_EVENTS_PER_ENTITY or np.std(series) == 0.0:
             continue
-        correlations.append(float(np.corrcoef(series[:-1], series[1:])[0, 1]))
-    finite = [value for value in correlations if np.isfinite(value)]
-    return float(np.mean(finite)) if finite else 0.0
+        value = float(np.corrcoef(series[:-1], series[1:])[0, 1])
+        if not np.isfinite(value):
+            continue
+        correlations.append(value)
+        weights.append(float(series.size - 1))
+    if not correlations:
+        return 0.0
+    return float(np.average(correlations, weights=weights))
 
 
 def autocorrelation_degradation(reference: pd.DataFrame, batch: pd.DataFrame, key: str) -> float:
     """Signed on purpose: a row-independent generator lands at or below zero here, and
     taking the magnitude would let that read as a healthy positive correlation."""
-    real = _lag1_autocorrelation(reference, key)
-    synthetic = _lag1_autocorrelation(batch, key)
+    real = lag1_iet_autocorrelation(reference, key)
+    synthetic = lag1_iet_autocorrelation(batch, key)
     if synthetic < MIN_AUTOCORRELATION:
         return FIDELITY_BEHAVIORAL_MAX * 2.0
     return max(real / synthetic, synthetic / max(real, MIN_AUTOCORRELATION))
@@ -86,6 +97,12 @@ def evaluate(batch: pd.DataFrame, reference: pd.DataFrame, config: PayLoopConfig
 
     ratios["graph_motif"] = motif_degradation(reference, batch)
     ratios["iet_autocorr"] = autocorrelation_degradation(reference, batch, key=AUTOCORRELATION_KEY)
+    observed = {
+        "iet_autocorr_reference": round(
+            lag1_iet_autocorrelation(reference, AUTOCORRELATION_KEY), 4
+        ),
+        "iet_autocorr_batch": round(lag1_iet_autocorrelation(batch, AUTOCORRELATION_KEY), 4),
+    }
     if ratios["iet_autocorr"] >= ceiling:
         structural.append(
             f"within-entity lag-1 inter-event-time autocorrelation on {AUTOCORRELATION_KEY} "
@@ -105,6 +122,10 @@ def evaluate(batch: pd.DataFrame, reference: pd.DataFrame, config: PayLoopConfig
     return LayerResult(
         "behavioral",
         passed,
-        {**{k: round(v, 4) for k, v in ratios.items()}, "composite": round(composite, 4)},
+        {
+            **{k: round(v, 4) for k, v in ratios.items()},
+            **observed,
+            "composite": round(composite, 4),
+        },
         detail,
     )

@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --canvas-cream: #f3f0ee;
+  --lifted-cream: #fcfbfa;
+  --white: #ffffff;
+  --soft-bone: #f4f4f4;
+  --ink-black: #141413;
+  --charcoal: #262627;
+  --slate-gray: #696969;
+  --dust-taupe: #d1cdc7;
+  --ghost-cream: #e8e2da;
+  --signal-orange: #cf4500;
+  --light-signal-orange: #f37338;
+  --clay-brown: #9a3a0a;
+  --link-blue: #3860be;
+  --mc-red: #eb001b;
+  --mc-yellow: #f79e1b;
+
+  --radius-button: 20px;
+  --radius-consent: 24px;
+  --radius-stadium: 40px;
+  --radius-pill: 999px;
+
+  --shadow-1: rgba(0, 0, 0, 0.04) 0px 4px 24px 0px;
+  --shadow-2: rgba(0, 0, 0, 0.08) 0px 24px 48px 0px;
+
+  --space-unit: 8px;
+  --content-max: 1280px;
+}
+
+html,
+body {
+  background: var(--canvas-cream);
+  color: var(--ink-black);
+  font-weight: 450;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer base {
+  h1 {
+    @apply text-[40px] leading-[42px] tracking-[-0.8px] font-medium md:text-[48px] md:leading-[50px] lg:text-hero;
+  }
+
+  h2 {
+    @apply text-section;
+  }
+
+  h3 {
+    @apply text-card;
+  }
+
+  p {
+    @apply text-body;
+  }
+
+  /* The palette has no green, so pass and fail are carried by ink and signal orange. */
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .payloop-section {
+    @apply mx-auto w-full max-w-content px-6 py-12 lg:px-12 lg:py-24;
+  }
+
+  .payloop-card {
+    @apply rounded-stadium bg-lifted p-6 shadow-card lg:p-10;
+  }
+
+  .payloop-chip {
+    @apply inline-flex items-center rounded-pill px-3 py-1 text-data font-medium;
+  }
+
+  .payloop-readout {
+    @apply text-readout tabular-nums;
+  }
+
+  .payloop-skeleton {
+    @apply animate-pulse rounded-button bg-bone;
+  }
+}
+
+.payloop-scroll-x {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}

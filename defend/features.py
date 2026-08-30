@@ -151,21 +151,32 @@ def cart_hash_mismatch(frame: pd.DataFrame) -> pd.Series:
     """AP2 binds the cart hash into the Payment Mandate, so any post-approval mutation
     breaks it. Rows without an agentic cart are 0, not null, because LightGBM treats a
     missing value as informative and the absence of a cart is not evidence of anything."""
-    intent = frame.get("cart_hash_at_intent", pd.Series(index=frame.index, dtype="object"))
-    settle = frame.get("cart_hash_at_settle", pd.Series(index=frame.index, dtype="object"))
+    intent = _column(frame, "cart_hash_at_intent")
+    settle = _column(frame, "cart_hash_at_settle")
     both_present = intent.notna() & settle.notna()
     mismatch = both_present & (intent != settle)
     return mismatch.astype("int8")
 
 
+def _column(frame: pd.DataFrame, name: str) -> pd.Series:
+    """A missing optional CES block is an all-null column, not an absent one."""
+    if name in frame.columns:
+        return frame[name]
+    return pd.Series(pd.NA, index=frame.index, dtype="object")
+
+
 def mandate_scope_breach(frame: pd.DataFrame) -> pd.Series:
     amount = pd.to_numeric(frame["amount"], errors="coerce")
-    ceiling = pd.to_numeric(frame.get("mandate_amount_max"), errors="coerce")
+    ceiling = pd.to_numeric(_column(frame, "mandate_amount_max"), errors="coerce")
     over_amount = (amount > ceiling).fillna(False)
     event_ts = pd.to_datetime(frame["event_ts"], utc=True)
-    expiry = pd.to_datetime(frame.get("mandate_expiry_ts"), utc=True, errors="coerce")
+    expiry = pd.to_datetime(_column(frame, "mandate_expiry_ts"), utc=True, errors="coerce")
     expired = (event_ts > expiry).fillna(False)
-    allowlist = frame.get("mandate_merchant_allowlist")
+    allowlist = (
+        frame["mandate_merchant_allowlist"]
+        if "mandate_merchant_allowlist" in frame.columns
+        else None
+    )
     if allowlist is None:
         off_list = pd.Series(False, index=frame.index)
     else:
@@ -190,7 +201,7 @@ def compare_cart_hashes(intent: str | None, settle: str | None) -> bool:
 def _pan_tail_digit(frame: pd.DataFrame) -> np.ndarray:
     # Tokens are hexadecimal and enumerated PANs are decimal, so the raw character is
     # folded rather than parsed; what the entropy measures is spread, not the digit itself.
-    tail = frame.get("pan_token", pd.Series(index=frame.index, dtype="object"))
+    tail = _column(frame, "pan_token")
     characters = tail.astype("object").fillna("0").astype(str).str[-1]
     codes = characters.map(lambda c: ord(c) % PAN_TAIL_DIGITS if c else 0)
     return codes.astype("int64").to_numpy()
@@ -322,7 +333,9 @@ def compute_features(frame: pd.DataFrame, context: FeatureContext | None = None)
 
     features["first_time_payee"] = _first_occurrence(frame, "payer_entity_id", "payee_entity_id")
     payee_age = _entity_age_hours(frame, "payee_entity_id", context, event_ts)
-    beneficiary = frame.get("beneficiary_first_seen_ts")
+    beneficiary = (
+        frame["beneficiary_first_seen_ts"] if "beneficiary_first_seen_ts" in frame.columns else None
+    )
     if beneficiary is not None:
         payee_age = np.where(
             beneficiary.notna().to_numpy(),
@@ -372,14 +385,16 @@ def compute_features(frame: pd.DataFrame, context: FeatureContext | None = None)
 
     features["mandate_scope_breach"] = mandate_scope_breach(frame)
     features["cart_hash_mismatch"] = cart_hash_mismatch(frame)
-    attestation = frame.get("agent_attestation_valid", pd.Series(index=frame.index, dtype="object"))
+    attestation = _column(frame, "agent_attestation_valid")
     features["attestation_invalid"] = attestation.eq(False).fillna(False).astype("int8")
     features["nonce_reused"] = _nonce_reused(frame)
-    ceiling = pd.to_numeric(frame.get("mandate_amount_max"), errors="coerce").to_numpy("float64")
+    ceiling = pd.to_numeric(_column(frame, "mandate_amount_max"), errors="coerce").to_numpy(
+        "float64"
+    )
     features["settle_vs_intent_amount_delta"] = np.nan_to_num(
         np.where(np.isfinite(ceiling) & (ceiling > 0), (amount - ceiling) / ceiling, 0.0)
     )
-    human_present = frame.get("human_present_flag", pd.Series(index=frame.index, dtype="object"))
+    human_present = _column(frame, "human_present_flag")
     features["human_present_flag_num"] = (
         human_present.map({True: 1, False: 0}).fillna(-1).astype("int8")
     )
@@ -387,7 +402,7 @@ def compute_features(frame: pd.DataFrame, context: FeatureContext | None = None)
     features["eci_semantic_code"] = _code_map(frame, "eci_semantic", ECI_SEMANTIC_CODES)
     features["threeds_flow_code"] = _code_map(frame, "threeds_flow", THREEDS_FLOW_CODES)
     features["pos_entry_mode_code"] = _code_map(frame, "pos_entry_mode", POS_ENTRY_MODE_CODES)
-    payee_name_match = frame.get("payee_name_match", pd.Series(index=frame.index, dtype="object"))
+    payee_name_match = _column(frame, "payee_name_match")
     features["payee_name_match_num"] = (
         payee_name_match.map({True: 1, False: 0}).fillna(-1).astype("int8")
     )
