@@ -533,6 +533,23 @@ def extend_pool(context: LoopContext, campaigns: list, active, round_index: int)
     return hardest
 
 
+def round_latency_p99(context: LoopContext) -> float | None:
+    """The inline scorer is re-benchmarked each round because each round may replace it.
+
+    Ten thousand single-row calls cost well under a second, so there is no reason to quote
+    a stale figure or leave the field empty."""
+    model_path = ARTIFACTS_DIR / MODEL_FILENAME
+    if not model_path.exists() or context.detector.channel_a is None:
+        return None
+    features = compute_features(context.pool.head(1), context.context)
+    measurement = run_benchmark(
+        str(model_path),
+        features.to_numpy("float32")[0],
+        platt_coefficients(context.detector.channel_a.model),
+    )
+    return float(measurement["p99_ms"])
+
+
 def _candidate_is_kept(context: LoopContext, candidate: Detector, batch: pd.DataFrame) -> bool:
     """Both models scored on the same held-out frame, at the same moment.
 
@@ -612,6 +629,7 @@ def run_round(context: LoopContext, round_index: int) -> dict:
         rejected=rejected,
         detector=context.detector,
         proposals_total=len(proposals),
+        latency_p99_ms=round_latency_p99(context),
     )
     emit(context, sse.EVENT_ROUND_RESULT, sse.round_result(record))
     hardest_ids = {str(campaign.campaign_id) for campaign in hardest}
