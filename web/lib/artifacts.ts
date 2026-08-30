@@ -219,6 +219,7 @@ export interface ScopeMatrix {
 
 export interface Latency {
   source: string;
+  path: string;
   p50_ms: number;
   p95_ms: number;
   p99_ms: number;

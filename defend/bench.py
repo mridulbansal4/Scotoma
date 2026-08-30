@@ -30,6 +30,10 @@ HLL_BENCH_PREFIX: str = "hll:bench:device"
 HLL_SEED_VALUES: int = 4096
 HLL_BENCH_ITERATIONS: int = 2_000
 REDIS_CONNECT_TIMEOUT_S: float = 2.0
+MEASURED_PATH_DESCRIPTION: str = (
+    "ONNX single-row model scoring plus Platt calibration; excludes feature assembly and "
+    "the feature-store lookup, which are reported separately"
+)
 
 
 def load_session(model_path: str) -> onnxruntime.InferenceSession:
@@ -135,6 +139,10 @@ def run_benchmark(
     measurement.update(
         {
             "source": "measured",
+            # Naming the segment matters: this is the model step, not the whole inline path.
+            # Feature assembly and the Redis lookup are timed separately and the four
+            # engineering targets below cover the rest.
+            "path": MEASURED_PATH_DESCRIPTION,
             "iterations": total,
             "warmup": skip,
             "budget_ms": config.scoring_latency_budget_ms,

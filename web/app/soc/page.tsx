@@ -53,9 +53,14 @@ export default function SocPage() {
 
         {latency.missing ? null : (
           <aside className="payloop-card flex flex-col gap-8">
-            <LatencyFigure label="p50 inline scoring" value={latency.data.p50_ms} source="measured" />
-            <LatencyFigure label="p95 inline scoring" value={latency.data.p95_ms} source="measured" />
-            <LatencyFigure label="p99 inline scoring" value={latency.data.p99_ms} source="measured" />
+            <LatencyFigure label="p50 model scoring" value={latency.data.p50_ms} source="measured" />
+            <LatencyFigure label="p95 model scoring" value={latency.data.p95_ms} source="measured" />
+            <LatencyFigure
+              label="p99 model scoring"
+              value={latency.data.p99_ms}
+              source="measured"
+              note={latency.data.path}
+            />
             <LatencyFigure
               label="Engineering target, total inline path"
               value={latency.data.targets.inline_total_ms}

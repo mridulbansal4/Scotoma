@@ -10,8 +10,8 @@ from pydantic import BaseModel
 
 from defend.bench import calibrated_score, cart_hash_matches, load_session
 from defend.ensemble import ARTIFACTS_DIR, MODEL_FILENAME, THRESHOLD_FILENAME
-from defend.explain import reason_for
-from defend.features import FEATURE_NAMES, compute_features
+from defend.explain import REASON_DICTIONARY, reason_for
+from defend.features import compute_features
 from defend.gbdt import load_threshold_artifact
 from defend.ladder import action_for_band, band_for_score
 from runtime.config import load_config
@@ -57,20 +57,20 @@ def _invariants(features: pd.Series) -> dict[str, bool]:
 
 
 def _reason_codes(features: pd.Series) -> list[dict]:
-    """Without the training background the API reports the invariant-bearing features that
-    actually fired, ranked by magnitude, rather than a fabricated SHAP attribution."""
-    ranked = features.reindex(FEATURE_NAMES).abs().sort_values(ascending=False)
+    """The mapped features that actually fired on this event, ranked by magnitude.
+
+    Per-event SHAP needs the training background sample, which the frozen artefact set
+    deliberately does not carry, so `shap` is null here and the attribution is stated as
+    what fired rather than as an attribution. The alert queue on the SOC screen carries
+    real interventional TreeSHAP values, computed against the training data at run time."""
+    mapped = [name for name in REASON_DICTIONARY if name in features.index]
+    fired = [(name, float(features[name])) for name in mapped if float(features[name]) != 0.0]
+    fired.sort(key=lambda item: abs(item[1]), reverse=True)
     reasons = []
-    for feature in ranked.index[:TOP_REASON_COUNT]:
-        code, label = reason_for(str(feature))
+    for feature, value in fired[:TOP_REASON_COUNT]:
+        code, label = reason_for(feature)
         reasons.append(
-            {
-                "code": code,
-                "label": label,
-                "feature": str(feature),
-                "value": float(features[feature]),
-                "shap": None,
-            }
+            {"code": code, "label": label, "feature": feature, "value": value, "shap": None}
         )
     return reasons
 

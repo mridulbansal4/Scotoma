@@ -61,7 +61,9 @@ repository and is permitted. Enforced by `tests/test_claims.py::test_no_generato
 **R-C · Latency honesty.** No sub-millisecond figure appears anywhere. Engineering targets are round
 numbers suffixed `_TARGET_MS` in `defend/bench.py`; measurements come only from
 `runs/<run_id>/latency.json`, produced by 10,000 single-row scoring calls after 500 warm-up calls.
-Every latency figure on screen carries a `MEASURED` or `TARGET` badge.
+Every latency figure on screen carries a `MEASURED`, `TARGET` or `NOT MEASURED` badge, and the
+measured figure names the segment it covers — ONNX model scoring plus Platt calibration — so it
+cannot be read as the whole inline path.
 Enforced by `tests/test_claims.py::test_no_unbadged_latency`.
 
 ## Running it
