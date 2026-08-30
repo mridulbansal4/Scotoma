@@ -1,4 +1,4 @@
-"""The Anthropic tool-use call, fence stripping, and a single repair retry."""
+"""The Gemini function-calling call, fence stripping, and a single repair retry."""
 
 import json
 
@@ -42,41 +42,51 @@ def _parse(payload: object) -> list[Proposal]:
 
 def propose(state, schemas: dict[str, dict], k: int = 6) -> list[Proposal]:
     config = load_config()
-    if not config.anthropic_api_key:
-        raise RedAgentUnavailable("ANTHROPIC_API_KEY is empty; offline search will run instead")
+    if not config.gemini_api_key:
+        raise RedAgentUnavailable("GEMINI_API_KEY is empty; offline search will run instead")
     try:
-        import anthropic
+        from google import genai
+        from google.genai import errors, types
     except ImportError as exc:
-        raise RedAgentUnavailable(f"anthropic sdk unavailable: {exc}") from exc
+        raise RedAgentUnavailable(f"google-genai sdk unavailable: {exc}") from exc
 
-    client = anthropic.Anthropic(
-        api_key=config.anthropic_api_key, timeout=config.red_agent_timeout_s
+    client = genai.Client(
+        api_key=config.gemini_api_key,
+        http_options=types.HttpOptions(timeout=int(config.red_agent_timeout_s * 1000)),
     )
-    tool = tool_schema(schemas)
-    messages = [{"role": "user", "content": user_message(state, schemas, k)}]
+    tool = types.Tool(function_declarations=[tool_schema(schemas)])
+    # Gemini has no separate system role: the prompt rides in system_instruction, and the
+    # repair turn is appended to contents the way the tool-use retry was.
+    generation = types.GenerateContentConfig(
+        system_instruction=SYSTEM_PROMPT,
+        max_output_tokens=MAX_TOKENS,
+        tools=[tool],
+        tool_config=types.ToolConfig(
+            function_calling_config=types.FunctionCallingConfig(
+                mode=types.FunctionCallingConfigMode.ANY,
+                allowed_function_names=[TOOL_NAME],
+            )
+        ),
+    )
+    contents = [user_message(state, schemas, k)]
 
     for attempt in range(2):
         try:
-            response = client.messages.create(
+            response = client.models.generate_content(
                 model=config.red_agent_model,
-                max_tokens=MAX_TOKENS,
-                # Roughly six calls per round share this block, so it is worth caching.
-                system=[
-                    {"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}
-                ],
-                tools=[tool],
-                tool_choice={"type": "tool", "name": TOOL_NAME},
-                messages=messages,
+                contents=contents,
+                config=generation,
             )
-        except (anthropic.APIError, OSError, ValueError) as exc:
-            raise RedAgentUnavailable(f"anthropic call failed: {exc}") from exc
+        except (errors.APIError, OSError, ValueError) as exc:
+            raise RedAgentUnavailable(f"gemini call failed: {exc}") from exc
 
-        for block in response.content:
-            if getattr(block, "type", None) == "tool_use":
-                try:
-                    return _parse(block.input)
-                except (ValueError, KeyError, TypeError, json.JSONDecodeError):
-                    break
+        for call in response.function_calls or []:
+            if call.name != TOOL_NAME:
+                continue
+            try:
+                return _parse(dict(call.args or {}))
+            except (ValueError, KeyError, TypeError, json.JSONDecodeError):
+                break
         if attempt == 0:
-            messages.append({"role": "user", "content": REPAIR_INSTRUCTION})
+            contents.append(REPAIR_INSTRUCTION)
     raise RedAgentUnavailable("malformed tool output survived one repair retry")

@@ -24,7 +24,7 @@ def tool_schema(schemas: dict[str, dict]) -> dict:
     return {
         "name": TOOL_NAME,
         "description": "Return campaign parameter sets for the sandboxed simulators.",
-        "input_schema": {
+        "parameters": {
             "type": "object",
             "properties": {
                 "proposals": {

@@ -14,8 +14,8 @@ class PayLoopConfig(BaseSettings):
     api_port: int = 8000
     web_port: int = 3000
 
-    anthropic_api_key: str = ""
-    red_agent_model: str = "claude-sonnet-4-6"
+    gemini_api_key: str = ""
+    red_agent_model: str = "gemini-2.5-flash"
     red_agent_mode: str = "offline"
     red_agent_timeout_s: float = 30.0
 
