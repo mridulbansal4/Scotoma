@@ -4,11 +4,13 @@ PayLoop operationalises a known asymmetry as a code-level mask. It did not disco
 """
 
 from collections import defaultdict
+from datetime import datetime
 
 import pandas as pd
 
 from defend.ensemble import Detector
 from defend.features import FeatureContext
+from generate.population import SIM_START
 from runtime.config import PayLoopConfig
 from schema.projections import project_frame
 
@@ -26,7 +28,10 @@ def party_id_for(scope: str, config: PayLoopConfig) -> str | None:
 
 
 def evaluate_all_scopes(
-    events: pd.DataFrame, config: PayLoopConfig, context: FeatureContext | None = None
+    events: pd.DataFrame,
+    config: PayLoopConfig,
+    context: FeatureContext | None = None,
+    sim_start: datetime | None = None,
 ) -> dict[str, dict[str, float]]:
     """Same detector class, three visibility masks. Returns {vector_id: {scope: pr_auc}}."""
     matrix: dict[str, dict[str, float]] = defaultdict(dict)
@@ -34,7 +39,9 @@ def evaluate_all_scopes(
         scoped = project_frame(events, scope, party_id=party_id_for(scope, config))
         if len(scoped) < MIN_SCOPE_ROWS or scoped["is_fraud"].sum() < 2:
             continue
-        detector = Detector(config, context=context).fit(scoped)
+        # The split boundary is an absolute date. Letting each scope infer its own start
+        # from its earliest surviving row would train the three of them on different windows.
+        detector = Detector(config, context=context, sim_start=sim_start or SIM_START).fit(scoped)
         for vector_id, score in detector.pr_auc_by_vector(scoped).items():
             matrix[vector_id][scope] = round(float(score), 4)
     return dict(matrix)

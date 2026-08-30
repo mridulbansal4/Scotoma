@@ -123,6 +123,38 @@ Run artefacts under `runs/<run_id>/` are the only source of results. No artefact
    to depart from the legitimate amount and response-code distributions, and that departure is the
    detection signal rather than a fidelity defect; layers 3 to 6 read the whole batch.
 
+## Three-minute walkthrough
+
+Every figure spoken here is read off the screen in front of you. Nothing in this script is a
+number to memorise; the artefacts carry them.
+
+| # | Time | Screen | The point |
+|---|---|---|---|
+| 1 | 0:00–0:25 | `/atlas` | The industry refuses more good revenue than it loses to fraud. Both figures are on screen with their provenance labels — one of them is vendor-commissioned and says so. |
+| 2 | 0:25–0:45 | `/atlas` | Thirty-two vectors, weighted to where the money actually leaks: mule networks, authorised push payment scams, agentic commerce. Twelve have live simulators in eight modules. The greyed rows are documented, not simulated. We show the gap rather than implying we built all thirty-two. |
+| 3 | 0:45–1:35 | `/redteam` then `/loop` | The agent reads the detector's own SHAP values and proposes campaigns. Watch one get rejected by the constraint validator. Then the money chart: evasion on the active campaign against the blue line, which is the blind holdout. The orange line is the fidelity composite, co-reported so you can see we did not buy the drop by degrading our own data. |
+| 4 | 1:35–2:00 | `/fidelity` | We ran a GaussianCopula ablation through our own gate. Its utility layer passed and its behavioural layer failed, because a row-independent generator has no within-entity inter-event-time structure at all. We rejected our own data. |
+| 5 | 2:00–2:35 | `/loop` scope matrix | Same detector, three visibility masks. Mule fan-in does not merely get harder at issuer scope — it collapses, and it recovers at network scope. We operationalise a known asymmetry; we did not discover one. |
+| 6 | 2:35–2:55 | `/soc` | Attestation valid. Signature valid. Amount inside the mandate cap. Payee unchanged. Merchant on the allowlist. Every conventional check passes. The only thing that fires is cart-hash-at-intent against cart-hash-at-settle. |
+| 7 | 2:55–3:00 | `/soc` cost dial and latency card | This is the number a CFO cares about. And that p99 is measured on this laptop, for the model step specifically — the sub-millisecond figures quoted elsewhere in this space are targets, not measurements, and ours are labelled. |
+
+If running long, cut beat 7. Never cut beats 4 or 5.
+
+**If the network is unavailable:** nothing changes. Every screen reads committed artefacts and the
+red-team console replays `sse_log.jsonl` from disk. The `AGENT: OFFLINE — evolutionary search` badge
+is the reproducibility answer, not an apology: Optuna searches the same parameter space the LLM
+would have proposed into.
+
+## Judged criteria
+
+| Criterion | Screen | Artefact | The one-line proof |
+|---|---|---|---|
+| Diversity of attacks identified | `/atlas` | `coverage.json`, `vectors.yaml` | 32 machine-readable vectors across six rails, 12 with live injectors, and the gap displayed rather than hidden |
+| Fidelity of attacks in simulation | `/fidelity` | `fidelity_report.json`, `ablation.json` | Our own ablation passed the utility layer and failed the behavioural layer. We rejected it. |
+| Detection algorithm efficacy | `/soc` | `per_vector_recall.json`, `reason_codes.json` | PR-AUC, per-vector recall including the weak ones, precision@k, FP:TP, cost per 100k, and a published negative result on the graph channel |
+| Novelty of the overall solution | `/loop` | `rounds.jsonl`, `scope_matrix.json` | A self-rejecting fidelity gate, a code-level party-scope mask, and a deterministic agentic-injection primitive |
+| Real-world feasibility | `/soc` | `latency.json`, `manifest.json` | Nothing heavy is in the authorisation path. Nothing blocks autonomously below 0.90. Here is the p99 we measured. |
+
 ## Repository map
 
 ```

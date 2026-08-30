@@ -581,7 +581,9 @@ def finalise(context: LoopContext) -> dict:
         ignore_index=True,
     )
 
-    scope_matrix = evaluate_all_scopes(context.pool, context.config, context.context)
+    scope_matrix = evaluate_all_scopes(
+        context.pool, context.config, context.context, sim_start=context.sim_start
+    )
     write_json(
         run_id,
         "scope_matrix.json",
@@ -845,7 +847,9 @@ def stage(name: str, config: PayLoopConfig | None = None) -> dict:
         write_json(config.run_id, "ablation.json", payload)
         return {"stage": name, "ablation_passed": result.passed, "layers": payload["layers"]}
     if name == "scopes":
-        matrix = evaluate_all_scopes(context.pool, config, context.context)
+        matrix = evaluate_all_scopes(
+            context.pool, config, context.context, sim_start=context.sim_start
+        )
         write_json(
             config.run_id,
             "scope_matrix.json",
