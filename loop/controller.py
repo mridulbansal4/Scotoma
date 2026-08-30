@@ -104,7 +104,7 @@ class LoopContext:
     round_records: list[dict] = field(default_factory=list)
 
 
-def persist(table: str, frame: pd.DataFrame) -> int:
+def persist(table: str, frame: pd.DataFrame, mode: str = "append") -> int:
     """Mirror a frame into the DuckDB supporting tables. The warehouse is a convenience for
     querying a run afterwards; the artefacts on disk remain the source of truth, so an
     unavailable warehouse degrades to a warning rather than losing the round."""
@@ -113,7 +113,7 @@ def persist(table: str, frame: pd.DataFrame) -> int:
     try:
         connection = open_warehouse()
         initialise_schema(connection)
-        written = write_frame(connection, table, frame)
+        written = write_frame(connection, table, frame, mode=mode)
         connection.close()
         return written
     except (WarehouseUnavailable, duckdb.Error) as exc:
@@ -232,8 +232,10 @@ def bootstrap(config: PayLoopConfig) -> LoopContext:
     partition.blind_events.to_parquet(DATA_DIR / "events_blind.parquet", index=False)
     edges = edge_table(partition.pool_events.head(REFERENCE_SAMPLE_ROWS))
     edges.to_parquet(DATA_DIR / "edges.parquet", index=False)
-    persist("entities", entities)
-    persist("edges", edges)
+    # Entities and edges are a full snapshot of a deterministic population, so a re-run
+    # replaces them; campaigns and round metrics accumulate across rounds.
+    persist("entities", entities, mode="replace")
+    persist("edges", edges, mode="replace")
 
     reference, carrier = _split_reference_and_carrier(partition.pool_events)
     evaluation_legit = _evaluation_window(partition.pool_events)

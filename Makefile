@@ -53,4 +53,4 @@ report:
 demo: setup loop web-data web
 
 clean:
-	rm -rf data/entities.parquet data/events_legit.parquet data/events_blind.parquet data/edges.parquet data/campaigns $(WEB_DATA)
+	rm -rf data/entities.parquet data/events_legit.parquet data/events_blind.parquet data/edges.parquet data/campaigns data/payloop.db $(WEB_DATA)
