@@ -1,0 +1,53 @@
+{
+  "calibration": {
+    "brier_calibrated": 0.00087,
+    "brier_uncalibrated": 0.015089,
+    "reliability": [
+      {
+        "bin_lower": 0.0,
+        "bin_upper": 0.1,
+        "count": 36132,
+        "mean_predicted": 0.0008240231358166563,
+        "observed_rate": 0.0007749363445145578
+      },
+      {
+        "bin_lower": 0.1,
+        "bin_upper": 0.2,
+        "count": 28,
+        "mean_predicted": 0.12952094930340208,
+        "observed_rate": 0.0
+      },
+      {
+        "bin_lower": 0.2,
+        "bin_upper": 0.30000000000000004,
+        "count": 6,
+        "mean_predicted": 0.2368558868944214,
+        "observed_rate": 0.3333333333333333
+      },
+      {
+        "bin_lower": 0.6000000000000001,
+        "bin_upper": 0.7000000000000001,
+        "count": 12,
+        "mean_predicted": 0.6020061074348131,
+        "observed_rate": 1.0
+      }
+    ]
+  },
+  "fp_tp_ratio": 0.0,
+  "precision_at_k": 1.0,
+  "recall": {
+    "V01": 0.9815,
+    "V02": 0.537,
+    "V05": 1.0,
+    "V06": 0.9621,
+    "V07": 0.1667,
+    "V18": 1.0,
+    "V19": 0.625,
+    "V20": 1.0,
+    "V21": 0.75,
+    "V22": 0.5185,
+    "V28": 1.0,
+    "V31": 0.7778
+  },
+  "recall_at_95_precision": 0.8949
+}

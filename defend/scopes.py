@@ -11,6 +11,7 @@ import pandas as pd
 
 from defend.ensemble import Detector
 from defend.features import FeatureContext
+from defend.split import TRAIN_END_DAY
 from generate.population import SIM_START
 from runtime.config import PayLoopConfig
 from schema.projections import project_frame
@@ -23,6 +24,12 @@ MIN_SCOPE_POSITIVES: int = 2
 STATUS_FITTED: str = "fitted"
 STATUS_TOO_FEW_ROWS: str = "too_few_rows"
 STATUS_TOO_FEW_POSITIVES: str = "too_few_positives"
+STATUS_NO_EVALUATION_FRAUD: str = "no_fraud_in_evaluation_window"
+
+
+def _evaluation_slice(frame: pd.DataFrame, sim_start: datetime) -> pd.DataFrame:
+    boundary = pd.Timestamp(sim_start) + pd.Timedelta(days=TRAIN_END_DAY)
+    return frame[pd.to_datetime(frame["event_ts"], utc=True) >= boundary].reset_index(drop=True)
 
 
 @dataclass
@@ -82,7 +89,14 @@ def evaluate_all_scopes(
             report.status[scope]["status"] = STATUS_TOO_FEW_POSITIVES
             report.status[scope]["detail"] = str(exc)
             continue
-        for vector_id, score in detector.pr_auc_by_vector(scoped).items():
+        # Scored on the same held-out window the round metrics use. Reading PR-AUC off the
+        # rows the scope just trained on would make every column look like memorisation.
+        held_out = _evaluation_slice(scoped, sim_start or SIM_START)
+        if held_out.empty or held_out["is_fraud"].sum() == 0:
+            report.status[scope]["status"] = STATUS_NO_EVALUATION_FRAUD
+            continue
+        report.status[scope]["evaluation_rows"] = int(len(held_out))
+        for vector_id, score in detector.pr_auc_by_vector(held_out).items():
             report.matrix[vector_id][scope] = round(float(score), 4)
     report.matrix = dict(report.matrix)
     return report

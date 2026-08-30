@@ -30,6 +30,10 @@ MERCHANT_CONTROL_BETA: tuple[float, float] = (2.0, 2.0)
 
 N_ISSUERS: int = 40
 N_ACQUIRERS: int = 30
+PRIMARY_ISSUER_ID: str = "ISS_007"
+PRIMARY_ACQUIRER_ID: str = "ACQ_014"
+ISSUER_CONCENTRATION: float = 0.18
+ACQUIRER_CONCENTRATION: float = 0.16
 AFFINITY_MERCHANTS_PER_HOLDER: int = 12
 PREFERENTIAL_ATTACHMENT_EXPONENT: float = 0.85
 LAMBDA_BASE_MU: float = -1.35
@@ -338,11 +342,24 @@ def _build_merchants(config: PayLoopConfig) -> pd.DataFrame:
             "lat": lat,
             "lon": lon,
             "control_strength": rng.beta(*MERCHANT_CONTROL_BETA, size=count),
-            "acquirer_id": [f"ACQ_{int(i):03d}" for i in rng.integers(0, N_ACQUIRERS, size=count)],
+            "acquirer_id": _acquirer_assignment(count, rng),
             "terminal_id": [f"TRM_{i:05d}" for i in range(count)],
             "created_ts": created,
         }
     )
+
+
+def _acquirer_assignment(count: int, rng: np.random.Generator) -> list[str]:
+    """Acquiring is concentrated, so one acquirer carries a large share of the estate.
+
+    Without that concentration the acquirer scope sees too little fraud to fit a detector
+    at all, and the party-scope comparison loses the column that makes it a comparison."""
+    assigned = rng.integers(0, N_ACQUIRERS, size=count)
+    concentrated = rng.random(count) < ACQUIRER_CONCENTRATION
+    return [
+        PRIMARY_ACQUIRER_ID if flag else f"ACQ_{int(value):03d}"
+        for value, flag in zip(assigned, concentrated, strict=True)
+    ]
 
 
 def _build_cardholders(
@@ -393,9 +410,9 @@ def _build_cardholders(
             "created_ts": created,
         }
     )
-    # ISS_007 is the largest synthetic issuer so the issuer scope has a meaningful share.
-    boost = rng.random(count) < 0.18
-    frame.loc[boost, "issuer_id"] = "ISS_007"
+    # The largest synthetic issuer, so the issuer scope holds a share worth measuring.
+    boost = rng.random(count) < ISSUER_CONCENTRATION
+    frame.loc[boost, "issuer_id"] = PRIMARY_ISSUER_ID
     return frame, preferences, amount_mu, amount_sigma
 
 

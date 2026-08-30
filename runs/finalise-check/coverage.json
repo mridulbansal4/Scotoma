@@ -1,0 +1,491 @@
+{
+  "counts": {
+    "documented": 22,
+    "emerging": 5,
+    "speculative": 5
+  },
+  "coverage_pct": 0.375,
+  "injector_classes": 12,
+  "injector_modules": 8,
+  "recall_bar": 0.6,
+  "rows": [
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": true,
+      "has_expected_features": true,
+      "has_injector": true,
+      "name": "PAN/CVV enumeration",
+      "rails": [
+        "CARD_CNP"
+      ],
+      "recall": 0.9814814814814815,
+      "status": "documented",
+      "tier": 1,
+      "vector_id": "V01"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": true,
+      "name": "BIN attack",
+      "rails": [
+        "CARD_CNP"
+      ],
+      "recall": 0.5370370370370371,
+      "status": "documented",
+      "tier": 1,
+      "vector_id": "V02"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "3DS2 frictionless-flow abuse",
+      "rails": [
+        "CARD_CNP"
+      ],
+      "recall": null,
+      "status": "emerging",
+      "tier": 2,
+      "vector_id": "V03"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Token provisioning fraud",
+      "rails": [
+        "CARD_CNP",
+        "CARD_CP"
+      ],
+      "recall": null,
+      "status": "documented",
+      "tier": 2,
+      "vector_id": "V04"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": true,
+      "has_expected_features": true,
+      "has_injector": true,
+      "name": "Authorised push payment scam",
+      "rails": [
+        "UPI",
+        "SEPA_INST",
+        "ACH"
+      ],
+      "recall": 1.0,
+      "status": "documented",
+      "tier": 1,
+      "vector_id": "V05"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": true,
+      "has_expected_features": true,
+      "has_injector": true,
+      "name": "UPI collect-request and mandate abuse",
+      "rails": [
+        "UPI"
+      ],
+      "recall": 0.9621212121212122,
+      "status": "documented",
+      "tier": 1,
+      "vector_id": "V06"
+    },
+    {
+      "blind_holdout": true,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": true,
+      "name": "Synthetic identity at scale",
+      "rails": [
+        "CARD_CNP",
+        "UPI",
+        "SEPA_INST",
+        "ACH"
+      ],
+      "recall": 0.16666666666666666,
+      "status": "documented",
+      "tier": 2,
+      "vector_id": "V07"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Deepfake video KYC bypass",
+      "rails": [
+        "CARD_CNP",
+        "UPI"
+      ],
+      "recall": null,
+      "status": "documented",
+      "tier": 3,
+      "vector_id": "V08"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Voice-cloned call-centre takeover",
+      "rails": [
+        "CARD_CNP",
+        "UPI"
+      ],
+      "recall": null,
+      "status": "documented",
+      "tier": 3,
+      "vector_id": "V09"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Document forgery at onboarding",
+      "rails": [
+        "CARD_CNP",
+        "ACH"
+      ],
+      "recall": null,
+      "status": "documented",
+      "tier": 3,
+      "vector_id": "V10"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "LLM-personalised romance and investment fraud",
+      "rails": [
+        "UPI",
+        "SEPA_INST",
+        "CARD_CNP"
+      ],
+      "recall": null,
+      "status": "documented",
+      "tier": 2,
+      "vector_id": "V11"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Business email compromise",
+      "rails": [
+        "ACH",
+        "SEPA_INST"
+      ],
+      "recall": null,
+      "status": "documented",
+      "tier": 2,
+      "vector_id": "V12"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Refund and chargeback abuse",
+      "rails": [
+        "CARD_CNP"
+      ],
+      "recall": null,
+      "status": "documented",
+      "tier": 3,
+      "vector_id": "V13"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Invoice and vendor fraud",
+      "rails": [
+        "ACH",
+        "SEPA_INST"
+      ],
+      "recall": null,
+      "status": "documented",
+      "tier": 3,
+      "vector_id": "V14"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Transaction laundering",
+      "rails": [
+        "CARD_CNP",
+        "CARD_CP"
+      ],
+      "recall": null,
+      "status": "emerging",
+      "tier": 3,
+      "vector_id": "V15"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Fake merchant onboarding",
+      "rails": [
+        "CARD_CNP",
+        "CARD_CP"
+      ],
+      "recall": null,
+      "status": "documented",
+      "tier": 3,
+      "vector_id": "V16"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Collusive merchants and bust-out",
+      "rails": [
+        "CARD_CNP",
+        "CARD_CP"
+      ],
+      "recall": null,
+      "status": "emerging",
+      "tier": 3,
+      "vector_id": "V17"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": true,
+      "has_expected_features": true,
+      "has_injector": true,
+      "name": "Delegated agent credential abuse",
+      "rails": [
+        "AGENTIC"
+      ],
+      "recall": 1.0,
+      "status": "speculative",
+      "tier": 1,
+      "vector_id": "V18"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": true,
+      "has_expected_features": true,
+      "has_injector": true,
+      "name": "Prompt injection against agent checkout",
+      "rails": [
+        "AGENTIC"
+      ],
+      "recall": 0.625,
+      "status": "emerging",
+      "tier": 1,
+      "vector_id": "V19"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": true,
+      "has_expected_features": true,
+      "has_injector": true,
+      "name": "Agent impersonation",
+      "rails": [
+        "AGENTIC"
+      ],
+      "recall": 1.0,
+      "status": "emerging",
+      "tier": 1,
+      "vector_id": "V20"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": true,
+      "has_expected_features": true,
+      "has_injector": true,
+      "name": "Mandate replay and forgery",
+      "rails": [
+        "AGENTIC"
+      ],
+      "recall": 0.75,
+      "status": "speculative",
+      "tier": 1,
+      "vector_id": "V21"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": true,
+      "name": "Adversarial evasion of the fraud scorer",
+      "rails": [
+        "CARD_CNP",
+        "UPI",
+        "AGENTIC"
+      ],
+      "recall": 0.5185185185185185,
+      "status": "documented",
+      "tier": 2,
+      "vector_id": "V22"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Training data poisoning",
+      "rails": [
+        "CARD_CNP",
+        "UPI"
+      ],
+      "recall": null,
+      "status": "speculative",
+      "tier": 3,
+      "vector_id": "V23"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Model extraction via decline feedback",
+      "rails": [
+        "CARD_CNP"
+      ],
+      "recall": null,
+      "status": "speculative",
+      "tier": 3,
+      "vector_id": "V24"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Account takeover via GenAI phishing",
+      "rails": [
+        "CARD_CNP",
+        "UPI",
+        "SEPA_INST",
+        "ACH"
+      ],
+      "recall": null,
+      "status": "documented",
+      "tier": 2,
+      "vector_id": "V25"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "First-party and bust-out lending fraud",
+      "rails": [
+        "ACH"
+      ],
+      "recall": null,
+      "status": "documented",
+      "tier": 3,
+      "vector_id": "V26"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "QR-code swap fraud",
+      "rails": [
+        "UPI",
+        "CARD_CP"
+      ],
+      "recall": null,
+      "status": "documented",
+      "tier": 2,
+      "vector_id": "V27"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": true,
+      "has_expected_features": true,
+      "has_injector": true,
+      "name": "Mule-network orchestration",
+      "rails": [
+        "UPI",
+        "SEPA_INST",
+        "ACH"
+      ],
+      "recall": 1.0,
+      "status": "documented",
+      "tier": 1,
+      "vector_id": "V28"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "NFC relay and malicious mobile applications",
+      "rails": [
+        "CARD_CP"
+      ],
+      "recall": null,
+      "status": "documented",
+      "tier": 3,
+      "vector_id": "V29"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Deepfake-augmented executive wire fraud",
+      "rails": [
+        "ACH",
+        "SEPA_INST"
+      ],
+      "recall": null,
+      "status": "documented",
+      "tier": 3,
+      "vector_id": "V30"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": true,
+      "has_expected_features": true,
+      "has_injector": true,
+      "name": "Cross-border SCA-gap exploitation",
+      "rails": [
+        "CARD_CNP"
+      ],
+      "recall": 0.7777777777777778,
+      "status": "documented",
+      "tier": 2,
+      "vector_id": "V31"
+    },
+    {
+      "blind_holdout": false,
+      "detected_at_recall_0_6": false,
+      "has_expected_features": true,
+      "has_injector": false,
+      "name": "Adaptive concept-drift evasion",
+      "rails": [
+        "CARD_CNP",
+        "UPI"
+      ],
+      "recall": null,
+      "status": "speculative",
+      "tier": 3,
+      "vector_id": "V32"
+    }
+  ],
+  "run_id": "finalise-check",
+  "total_vectors": 32,
+  "vectors_with_injector": 12
+}
