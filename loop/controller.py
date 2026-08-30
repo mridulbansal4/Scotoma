@@ -83,6 +83,17 @@ DEFAULT_PROPOSAL_VECTORS: tuple[str, ...] = (
     "V21",
 )
 DATA_DIR: Path = Path(__file__).resolve().parent.parent / "data"
+RUN_ARTIFACTS: tuple[str, ...] = (
+    "rounds.jsonl",
+    "scope_matrix.json",
+    "per_vector_recall.json",
+    "coverage.json",
+    "latency.json",
+    "ablation.json",
+    "reason_codes.json",
+    "alerts.jsonl",
+    "distributions.json",
+)
 
 
 @dataclass
@@ -424,6 +435,104 @@ def _carrier_sample(context: LoopContext, batch_size: int, round_index: int) -> 
     return _carrier_entities(context.carrier, size, rng)
 
 
+def _no_valid_proposals(context, round_index, started, rejected, total) -> dict:
+    return context.metrics.record(
+        round_index,
+        status=STATUS_NO_VALID_PROPOSALS,
+        started=started,
+        rejected=rejected,
+        proposals_total=total,
+        detector=context.detector,
+    )
+
+
+def realise_campaigns(
+    context: LoopContext,
+    valid: list[Proposal],
+    window: TimeWindow,
+    round_index: int,
+    rejected: list,
+) -> list:
+    """Turn surviving proposals into campaigns, trimmed to their rail's prevalence budget."""
+    legit = context.pool[~context.pool["is_fraud"]]
+    vector_ids = [item.vector_id for item in valid]
+    campaigns = []
+    for item in valid:
+        purpose = f"round{round_index}:{item.vector_id}"
+        try:
+            campaign = INJECTORS[item.vector_id]().inject(
+                context.population, dict(item.params), window, rng_for(purpose)
+            )
+            campaign.events = budgeted_campaign(
+                campaign, legit, context.config, vector_ids, purpose
+            )
+            campaigns.append(campaign)
+        except (InjectorProducedNothing, ValueError, KeyError, IndexError) as exc:
+            rejected.append(
+                {
+                    "index": len(rejected),
+                    "vector_id": item.vector_id,
+                    "reason": f"injector produced nothing: {exc}",
+                    "rule": "injector returned zero events",
+                    "params": item.params,
+                }
+            )
+            emit(
+                context,
+                sse.EVENT_PROPOSAL_REJECTED,
+                sse.proposal_rejected(round_index, rejected[-1]),
+            )
+    return campaigns
+
+
+def gate_batch(context: LoopContext, batch: pd.DataFrame, round_index: int):
+    """Run the six layers on the batch as it would be appended: campaigns mixed into a
+    matched slice of legitimate traffic."""
+    mixed = (
+        pd.concat([_carrier_sample(context, len(batch), round_index), batch], ignore_index=True)
+        .sort_values("event_ts")
+        .reset_index(drop=True)
+    )
+    gate = run_gate(mixed, context.reference, round_index, context.config)
+    emit(context, sse.EVENT_FIDELITY, sse.fidelity(round_index, gate))
+    append_jsonl(
+        context.run_id, "fidelity_report.jsonl", {"round": round_index, **gate.as_payload()}
+    )
+    return gate
+
+
+def score_round(context: LoopContext, batch: pd.DataFrame):
+    """Score the round against legitimate traffic the model has never been fitted on."""
+    scored = (
+        pd.concat([context.evaluation_legit, batch], ignore_index=True)
+        .sort_values("event_ts")
+        .reset_index(drop=True)
+    )
+    return context.detector.evaluate(scored), context.detector.evaluate(context.blind_events)
+
+
+def extend_pool(context: LoopContext, campaigns: list, active, round_index: int) -> list:
+    """Append the hardest campaigns and keep everything already there.
+
+    The original population and round-1 campaigns stay in the pool permanently: replay of
+    older typologies is what stops the detector forgetting them as new ones arrive."""
+    hardest = sorted(
+        campaigns, key=lambda c: active.evasion.get(str(c.campaign_id), 0.0), reverse=True
+    )[: context.config.loop_hardest_k]
+    for campaign in campaigns:
+        campaign.events.to_parquet(
+            DATA_DIR / "campaigns" / f"round_{round_index}_{campaign.vector_id}.parquet",
+            index=False,
+        )
+    context.pool = enforce_caps(
+        pd.concat([context.pool, *(c.events for c in hardest)], ignore_index=True)
+        .sort_values("event_ts")
+        .reset_index(drop=True),
+        context.config,
+    )
+    return hardest
+
+
 def run_round(context: LoopContext, round_index: int) -> dict:
     started = datetime.now(UTC)
     state = context.detector.state()
@@ -442,70 +551,15 @@ def run_round(context: LoopContext, round_index: int) -> dict:
         emit(context, sse.EVENT_PROPOSAL, sse.proposal(round_index, position, item))
     for item in rejected:
         emit(context, sse.EVENT_PROPOSAL_REJECTED, sse.proposal_rejected(round_index, item))
-
     if not valid:
-        return context.metrics.record(
-            round_index,
-            status=STATUS_NO_VALID_PROPOSALS,
-            started=started,
-            rejected=rejected,
-            proposals_total=len(proposals),
-            detector=context.detector,
-        )
+        return _no_valid_proposals(context, round_index, started, rejected, len(proposals))
 
-    legit = context.pool[~context.pool["is_fraud"]]
-    vector_ids = [item.vector_id for item in valid]
-    campaigns = []
-    for item in valid:
-        try:
-            campaign = INJECTORS[item.vector_id]().inject(
-                context.population,
-                dict(item.params),
-                window,
-                rng_for(f"round{round_index}:{item.vector_id}"),
-            )
-            campaign.events = budgeted_campaign(
-                campaign, legit, context.config, vector_ids, f"round{round_index}:{item.vector_id}"
-            )
-            campaigns.append(campaign)
-        except (InjectorProducedNothing, ValueError, KeyError, IndexError) as exc:
-            rejected.append(
-                {
-                    "index": len(rejected),
-                    "vector_id": item.vector_id,
-                    "reason": f"injector produced nothing: {exc}",
-                    "rule": "injector returned zero events",
-                    "params": item.params,
-                }
-            )
-            emit(
-                context,
-                sse.EVENT_PROPOSAL_REJECTED,
-                sse.proposal_rejected(round_index, rejected[-1]),
-            )
+    campaigns = realise_campaigns(context, valid, window, round_index, rejected)
     if not campaigns:
-        return context.metrics.record(
-            round_index,
-            status=STATUS_NO_VALID_PROPOSALS,
-            started=started,
-            rejected=rejected,
-            proposals_total=len(proposals),
-            detector=context.detector,
-        )
+        return _no_valid_proposals(context, round_index, started, rejected, len(proposals))
 
     batch = pd.concat([c.events for c in campaigns], ignore_index=True)
-    gate_batch = (
-        pd.concat([_carrier_sample(context, len(batch), round_index), batch], ignore_index=True)
-        .sort_values("event_ts")
-        .reset_index(drop=True)
-    )
-
-    gate = run_gate(gate_batch, context.reference, round_index, context.config)
-    emit(context, sse.EVENT_FIDELITY, sse.fidelity(round_index, gate))
-    append_jsonl(
-        context.run_id, "fidelity_report.jsonl", {"round": round_index, **gate.as_payload()}
-    )
-
+    gate = gate_batch(context, batch, round_index)
     if not gate.passed:
         context.agent_hints = gate.failure_hints()
         emit(context, sse.EVENT_ROUND_REJECTED, sse.round_rejected(round_index, gate))
@@ -520,33 +574,8 @@ def run_round(context: LoopContext, round_index: int) -> dict:
             detector=context.detector,
         )
 
-    scored_batch = (
-        pd.concat(
-            [_carrier_sample(context, len(batch), round_index + 100), batch], ignore_index=True
-        )
-        .sort_values("event_ts")
-        .reset_index(drop=True)
-    )
-    active = context.detector.evaluate(scored_batch)
-    blind = context.detector.evaluate(context.blind_events)
-
-    hardest = sorted(
-        campaigns, key=lambda c: active.evasion.get(str(c.campaign_id), 0.0), reverse=True
-    )[: context.config.loop_hardest_k]
-    hardest_ids = {str(campaign.campaign_id) for campaign in hardest}
-    for campaign in campaigns:
-        campaign.events.to_parquet(
-            DATA_DIR / "campaigns" / f"round_{round_index}_{campaign.vector_id}.parquet",
-            index=False,
-        )
-    # The original population and round-1 campaigns stay in the pool permanently: replay of
-    # older typologies is what stops the detector forgetting them as new ones arrive.
-    context.pool = enforce_caps(
-        pd.concat([context.pool, *(c.events for c in hardest)], ignore_index=True)
-        .sort_values("event_ts")
-        .reset_index(drop=True),
-        context.config,
-    )
+    active, blind = score_round(context, batch)
+    hardest = extend_pool(context, campaigns, active, round_index)
 
     candidate = Detector(context.config, context=context.context, sim_start=context.sim_start).fit(
         context.pool, blind=context.blind_events
@@ -571,30 +600,16 @@ def run_round(context: LoopContext, round_index: int) -> dict:
         proposals_total=len(proposals),
     )
     emit(context, sse.EVENT_ROUND_RESULT, sse.round_result(record))
+    hardest_ids = {str(campaign.campaign_id) for campaign in hardest}
     persist("campaigns", campaign_rows(campaigns, round_index, active, hardest_ids, True))
     persist("round_metrics", round_metric_row(record))
     context.round_records.append(record)
     return record
 
 
-def finalise(context: LoopContext) -> dict:
+def _write_detector_reports(context: LoopContext, active, blind) -> dict[str, float]:
+    """Per-vector recall, the headline metrics, and the coverage matrix they feed."""
     run_id = context.run_id
-    evaluation_frame = pd.concat(
-        [context.evaluation_legit, _pool_campaigns(context), context.blind_events],
-        ignore_index=True,
-    )
-
-    scopes = evaluate_all_scopes(
-        context.pool, context.config, context.context, sim_start=context.sim_start
-    )
-    write_json(run_id, "scope_matrix.json", scopes.as_payload())
-
-    active = context.detector.evaluate(
-        pd.concat([context.evaluation_legit, _pool_campaigns(context)], ignore_index=True)
-        .sort_values("event_ts")
-        .reset_index(drop=True)
-    )
-    blind = context.detector.evaluate(context.blind_events)
     per_vector = {**active.per_vector_recall, **blind.per_vector_recall}
     write_json(
         run_id,
@@ -614,51 +629,69 @@ def finalise(context: LoopContext) -> dict:
         },
     )
     write_json(run_id, "coverage.json", coverage_for_run(run_id, per_vector))
-    write_json(run_id, "reason_codes.json", _reason_payload(context))
-    _write_alerts(context, evaluation_frame)
-    write_json(run_id, "distributions.json", _distributions(context))
+    return per_vector
 
-    latency = _benchmark(context)
-    write_json(run_id, "latency.json", latency)
 
-    ablation_result, ablation_payload = run_ablation(
-        context.carrier, context.reference, context.config
-    )
-    write_json(run_id, "ablation.json", ablation_payload)
+def _write_gate_reports(context: LoopContext) -> bool:
+    """The per-round gate history and the ablation that proves the gate can fail."""
+    run_id = context.run_id
+    result, payload = run_ablation(context.carrier, context.reference, context.config)
+    write_json(run_id, "ablation.json", payload)
     write_json(
         run_id, "fidelity_report.json", {"rounds": read_jsonl(run_id, "fidelity_report.jsonl")}
     )
+    reset_artifact(run_id, "fidelity_report.jsonl")
+    return result.passed
 
-    completed = sum(1 for r in read_jsonl(run_id, ROUNDS_FILE) if r["status"] == STATUS_COMPLETED)
-    rejected = sum(
-        1 for r in read_jsonl(run_id, ROUNDS_FILE) if r["status"] == STATUS_FIDELITY_REJECTED
-    )
-    gnn = {
+
+def _gnn_result(context: LoopContext) -> dict:
+    lift = context.detector.gnn_measured_lift
+    return {
         "enabled": context.detector.gnn_enabled,
-        "measured_lift_pr_auc": round(context.detector.gnn_measured_lift, 4)
-        if context.detector.gnn_measured_lift is not None
-        else None,
+        "measured_lift_pr_auc": round(lift, 4) if lift is not None else None,
         "kill_threshold": context.config.gnn_min_lift_prauc,
     }
+
+
+def finalise(context: LoopContext) -> dict:
+    run_id = context.run_id
+    campaigns = _pool_campaigns(context)
+    evaluation_frame = pd.concat(
+        [context.evaluation_legit, campaigns, context.blind_events], ignore_index=True
+    )
+
+    scopes = evaluate_all_scopes(
+        context.pool, context.config, context.context, sim_start=context.sim_start
+    )
+    write_json(run_id, "scope_matrix.json", scopes.as_payload())
+
+    active = context.detector.evaluate(
+        pd.concat([context.evaluation_legit, campaigns], ignore_index=True)
+        .sort_values("event_ts")
+        .reset_index(drop=True)
+    )
+    blind = context.detector.evaluate(context.blind_events)
+    _write_detector_reports(context, active, blind)
+
+    write_json(run_id, "reason_codes.json", _reason_payload(context))
+    _write_alerts(context, evaluation_frame)
+    write_json(run_id, "distributions.json", _distributions(context))
+    write_json(run_id, "latency.json", _benchmark(context))
+    ablation_passed = _write_gate_reports(context)
+
+    rounds = read_jsonl(run_id, ROUNDS_FILE)
+    completed = sum(1 for record in rounds if record["status"] == STATUS_COMPLETED)
+    rejected = sum(1 for record in rounds if record["status"] == STATUS_FIDELITY_REJECTED)
+    gnn = _gnn_result(context)
     write_json(run_id, "gnn.json", gnn)
-    artifacts = [
-        "rounds.jsonl",
-        "scope_matrix.json",
-        "per_vector_recall.json",
-        "coverage.json",
-        "latency.json",
-        "ablation.json",
-        "reason_codes.json",
-        "alerts.jsonl",
-        "distributions.json",
-    ]
-    emit(context, sse.EVENT_DONE, sse.done(run_id, completed, rejected, gnn, artifacts))
+
+    emit(context, sse.EVENT_DONE, sse.done(run_id, completed, rejected, gnn, RUN_ARTIFACTS))
     return {
         "run_id": run_id,
         "rounds_completed": completed,
         "rounds_rejected": rejected,
         "gnn": gnn,
-        "ablation_passed": ablation_result.passed,
+        "ablation_passed": ablation_passed,
     }
 
 

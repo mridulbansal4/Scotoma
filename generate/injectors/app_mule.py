@@ -21,6 +21,8 @@ SCAM_RAIL: str = "UPI"
 MULE_RAILS: tuple[str, ...] = ("SEPA_INST", "ACH")
 SCAM_CURRENCY: str = "INR"
 LADDER_JITTER: float = 1.35
+MIN_CYCLE_MINUTES: float = 30.0
+DEFAULT_AMOUNT_LADDER: tuple[float, ...] = (4800.0, 9600.0, 14400.0)
 NEW_BENEFICIARY_AGE_HOURS: int = 3
 MULE_EVENT_LIMIT: int = 20_000
 SCAM_EVENT_LIMIT: int = 12_000
@@ -244,68 +246,15 @@ class MuleNetworkCampaign:
         campaign_id = seeded_uuid("V28", int(window.start.timestamp()))
         fan_in = int(params["fan_in_degree"])
         hops = int(params["hop_count"])
-        dwell = float(params["dwell_minutes"])
-        ladder = [float(v) for v in params.get("amount_ladder", [4800.0, 9600.0, 14400.0])]
-
         needed = fan_in * hops + hops + 1
         accounts = population.sample_accounts(min(needed, population.account_count()), rng)
         if len(accounts) < fan_in + 2:
             raise InjectorProducedNothing("V28 has too few accounts for the requested fan-in")
 
-        rows: list[dict] = []
-        index = 0
-        collectors = accounts.iloc[:hops]
-        sources = accounts.iloc[hops:]
-        cursor = pd.Timestamp(window.start)
-        while cursor < pd.Timestamp(window.end) and len(rows) < MULE_EVENT_LIMIT:
-            for hop in range(hops):
-                collector = collectors.iloc[hop]
-                for leg in range(fan_in):
-                    source = sources.iloc[(index + leg) % len(sources)]
-                    timestamp = cursor + pd.Timedelta(minutes=float(rng.uniform(0.0, dwell)))
-                    if timestamp >= pd.Timestamp(window.end):
-                        break
-                    rows.append(
-                        _transfer_row(
-                            f"V28:{campaign_id}",
-                            index,
-                            timestamp,
-                            MULE_RAILS[index % len(MULE_RAILS)],
-                            CURRENCY_BY_COUNTRY[str(source["home_country"])],
-                            ladder[leg % len(ladder)]
-                            * float(rng.uniform(1.0 / LADDER_JITTER, LADDER_JITTER)),
-                            str(source["entity_id"]),
-                            str(collector["entity_id"]),
-                            str(source["home_country"]),
-                            str(collector["home_country"]),
-                            rng,
-                        )
-                    )
-                    index += 1
-                # Onward layering: the collector forwards within the dwell window, which is
-                # the short-dwell signature the graph channel is meant to see.
-                if hop + 1 < hops:
-                    onward = collectors.iloc[hop + 1]
-                    rows.append(
-                        _transfer_row(
-                            f"V28:{campaign_id}",
-                            index,
-                            cursor + pd.Timedelta(minutes=dwell),
-                            MULE_RAILS[index % len(MULE_RAILS)],
-                            CURRENCY_BY_COUNTRY[str(collector["home_country"])],
-                            sum(ladder[: fan_in % len(ladder) + 1])
-                            * float(rng.uniform(1.0 / LADDER_JITTER, LADDER_JITTER)),
-                            str(collector["entity_id"]),
-                            str(onward["entity_id"]),
-                            str(collector["home_country"]),
-                            str(onward["home_country"]),
-                            rng,
-                        )
-                    )
-                    index += 1
-            cursor += pd.Timedelta(minutes=max(dwell * 2.0, 30.0))
+        rows = self._layer(accounts, params, window, fan_in, hops, rng, campaign_id)
         if not rows:
             raise InjectorProducedNothing("V28 produced no layering legs")
+
         events = finalise(rows, self.vector_id, campaign_id, params.get("_lineage", []))
         events["amount_inr"] = to_inr_array(
             events["amount"].to_numpy("float64"), events["currency"].to_numpy()
@@ -318,3 +267,72 @@ class MuleNetworkCampaign:
             campaign_subgraph(events),
             params.get("_rationale", ""),
         )
+
+    def _layer(
+        self,
+        accounts: pd.DataFrame,
+        params: dict,
+        window: TimeWindow,
+        fan_in: int,
+        hops: int,
+        rng: np.random.Generator,
+        campaign_id,
+    ) -> list[dict]:
+        """Fan-in onto a collector, then onward within the dwell window.
+
+        The short dwell between receipt and onward transfer is the signature: money that
+        sits is not being laundered."""
+        dwell = float(params["dwell_minutes"])
+        ladder = [float(value) for value in params.get("amount_ladder", DEFAULT_AMOUNT_LADDER)]
+        collectors, sources = accounts.iloc[:hops], accounts.iloc[hops:]
+        rows: list[dict] = []
+        index = 0
+        cursor = pd.Timestamp(window.start)
+        while cursor < pd.Timestamp(window.end) and len(rows) < MULE_EVENT_LIMIT:
+            for hop in range(hops):
+                collector = collectors.iloc[hop]
+                for leg in range(fan_in):
+                    source = sources.iloc[(index + leg) % len(sources)]
+                    timestamp = cursor + pd.Timedelta(minutes=float(rng.uniform(0.0, dwell)))
+                    if timestamp >= pd.Timestamp(window.end):
+                        break
+                    jitter = float(rng.uniform(1.0 / LADDER_JITTER, LADDER_JITTER))
+                    rows.append(
+                        _transfer_row(
+                            f"V28:{campaign_id}",
+                            index,
+                            timestamp,
+                            MULE_RAILS[index % len(MULE_RAILS)],
+                            CURRENCY_BY_COUNTRY[str(source["home_country"])],
+                            ladder[leg % len(ladder)] * jitter,
+                            str(source["entity_id"]),
+                            str(collector["entity_id"]),
+                            str(source["home_country"]),
+                            str(collector["home_country"]),
+                            rng,
+                        )
+                    )
+                    index += 1
+                if hop + 1 < hops:
+                    onward = collectors.iloc[hop + 1]
+                    forwarded = sum(ladder[: fan_in % len(ladder) + 1]) * float(
+                        rng.uniform(1.0 / LADDER_JITTER, LADDER_JITTER)
+                    )
+                    rows.append(
+                        _transfer_row(
+                            f"V28:{campaign_id}",
+                            index,
+                            cursor + pd.Timedelta(minutes=dwell),
+                            MULE_RAILS[index % len(MULE_RAILS)],
+                            CURRENCY_BY_COUNTRY[str(collector["home_country"])],
+                            forwarded,
+                            str(collector["entity_id"]),
+                            str(onward["entity_id"]),
+                            str(collector["home_country"]),
+                            str(onward["home_country"]),
+                            rng,
+                        )
+                    )
+                    index += 1
+            cursor += pd.Timedelta(minutes=max(dwell * 2.0, MIN_CYCLE_MINUTES))
+        return rows

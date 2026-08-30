@@ -69,6 +69,10 @@ UPI_COLLECT_SHARE: float = 0.12
 PROXY_IP_ROTATION_RATE: float = 0.05
 SECONDARY_DEVICE_RATE: float = 0.11
 MIN_AMOUNT: float = 0.50
+APPROVED_RESPONSE_CODE: str = "00"
+CONTROL_APPROVAL_WEIGHT: float = 0.03
+MIN_APPROVAL_RATE: float = 0.60
+MAX_APPROVAL_RATE: float = 0.995
 EMISSION_CHUNK_ROWS: int = 400_000
 # A cardholder transacts in sessions: a basket split, a retry, a second item minutes later.
 # Sessions are what give within-entity inter-event times their positive lag-1
@@ -107,9 +111,7 @@ def intensity_multiplier(hour: int, weekday: int) -> float:
     return float(HOUR_MULTIPLIER[hour] * DOW_MULTIPLIER[weekday])
 
 
-def activity_factors(
-    n_holders: int, n_blocks: int, rng: np.random.Generator
-) -> np.ndarray:
+def activity_factors(n_holders: int, n_blocks: int, rng: np.random.Generator) -> np.ndarray:
     """Per-holder weekly activity multipliers from a persistent AR(1) in log space."""
     innovation = ACTIVITY_SIGMA * np.sqrt(1.0 - ACTIVITY_PERSISTENCE**2)
     levels = np.empty((n_holders, n_blocks), dtype="float64")
@@ -262,6 +264,82 @@ def emit_legitimate(
     return pd.concat(frames, ignore_index=True)
 
 
+def _merchant_choice(
+    population: Population, holder_index: np.ndarray, rng: np.random.Generator
+) -> tuple[np.ndarray, np.ndarray]:
+    """A merchant from the holder's own affinity set, and its position in the MCC universe."""
+    affinity = population.affinity_merchants[holder_index]
+    merchant_index = affinity[
+        np.arange(holder_index.size), rng.integers(0, affinity.shape[1], size=holder_index.size)
+    ]
+    merchant_mcc = population.merchants["mcc"].to_numpy()[merchant_index]
+    lookup = {mcc: position for position, mcc in enumerate(MCC_UNIVERSE)}
+    return merchant_index, np.array([lookup[mcc] for mcc in merchant_mcc], dtype="int64")
+
+
+def _amounts(
+    population: Population,
+    holder_index: np.ndarray,
+    mcc_position: np.ndarray,
+    rails: np.ndarray,
+    currency: np.ndarray,
+    rng: np.random.Generator,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Lognormal draw against the holder's own per-category profile, clipped to the rail."""
+    mu = population.amount_mu[holder_index, mcc_position].astype("float64")
+    sigma = population.amount_sigma[holder_index, mcc_position].astype("float64")
+    rail_limit = np.array([RAIL_LIMITS[rail] for rail in rails])
+    amount = np.clip(np.round(np.exp(rng.normal(mu, sigma)), 2), MIN_AMOUNT, rail_limit)
+    fx = np.array([FX_RATE_TABLE[code] for code in currency])
+    return amount, np.round(amount * fx, 2)
+
+
+def _core_block(
+    population: Population,
+    holder_index: np.ndarray,
+    timestamps: pd.DatetimeIndex,
+    rails: np.ndarray,
+    payee: np.ndarray,
+    countries: np.ndarray,
+    payee_country: np.ndarray,
+    currency: np.ndarray,
+    amount: np.ndarray,
+    amount_inr: np.ndarray,
+    response_code: np.ndarray,
+    purpose: str,
+    offset: int,
+) -> pd.DataFrame:
+    holders = population.cardholders
+    size = holder_index.size
+    frame = pd.DataFrame(
+        {
+            "event_id": [str(seeded_uuid(f"{purpose}:event", offset + i)) for i in range(size)],
+            "event_ts": timestamps,
+            "rail": rails,
+            "amount": amount,
+            "currency": currency,
+            "amount_inr": amount_inr,
+            "payer_entity_id": holders["entity_id"].to_numpy()[holder_index],
+            "payee_entity_id": payee,
+            "payer_country": countries,
+            "payee_country": payee_country,
+            "cross_border": payee_country != countries,
+            "payer_name_hash": holders["payer_name_hash"].to_numpy()[holder_index],
+            "payer_kyc_level": holders["kyc_level"].to_numpy()[holder_index],
+            "payer_balance_band": holders["balance_band"].to_numpy()[holder_index],
+            "response_code": response_code,
+            "is_fraud": False,
+            "vector_id": None,
+            "campaign_id": None,
+            "red_team_round": None,
+            "label_available_ts": timestamps
+            + pd.Timedelta(days=population.config.label_embargo_days),
+        }
+    )
+    frame["mutation_lineage"] = [[] for _ in range(size)]
+    return frame
+
+
 def _build_block(
     population: Population,
     holder_index: np.ndarray,
@@ -275,22 +353,10 @@ def _build_block(
     merchants = population.merchants
 
     rails = _choose_rails(population, holder_index, rng)
-    affinity = population.affinity_merchants[holder_index]
-    merchant_index = affinity[np.arange(size), rng.integers(0, affinity.shape[1], size=size)]
-    merchant_mcc = merchants["mcc"].to_numpy()[merchant_index]
-    mcc_lookup = {mcc: position for position, mcc in enumerate(MCC_UNIVERSE)}
-    mcc_position = np.array([mcc_lookup[m] for m in merchant_mcc], dtype="int64")
-
-    mu = population.amount_mu[holder_index, mcc_position].astype("float64")
-    sigma = population.amount_sigma[holder_index, mcc_position].astype("float64")
-    amount = np.exp(rng.normal(mu, sigma))
-
+    merchant_index, mcc_position = _merchant_choice(population, holder_index, rng)
     countries = holders["home_country"].to_numpy()[holder_index]
-    currency = np.array([CURRENCY_BY_COUNTRY[c] for c in countries])
-    rail_limit = np.array([RAIL_LIMITS[r] for r in rails])
-    amount = np.clip(np.round(amount, 2), MIN_AMOUNT, rail_limit)
-    fx = np.array([FX_RATE_TABLE[c] for c in currency])
-    amount_inr = np.round(amount * fx, 2)
+    currency = np.array([CURRENCY_BY_COUNTRY[country] for country in countries])
+    amount, amount_inr = _amounts(population, holder_index, mcc_position, rails, currency, rng)
 
     is_card = np.isin(rails, ["CARD_CNP", "CARD_CP"])
     is_cnp = rails == "CARD_CNP"
@@ -302,53 +368,39 @@ def _build_block(
     account_ids = population.accounts["entity_id"].to_numpy()
     account_pick = rng.integers(0, account_ids.size, size=size)
     merchant_ids = merchants["entity_id"].to_numpy()[merchant_index]
-    upi_to_merchant = rng.random(size) < UPI_MERCHANT_SHARE
-    payee_is_merchant = is_card | is_agentic | (is_upi & upi_to_merchant)
+    payee_is_merchant = is_card | is_agentic | (is_upi & (rng.random(size) < UPI_MERCHANT_SHARE))
     payee = np.where(payee_is_merchant, merchant_ids, account_ids[account_pick])
 
     merchant_country = merchants["home_country"].to_numpy()[merchant_index]
-    cross_border_draw = rng.random(size) < CROSS_BORDER_RATE
-    payee_country = np.where(cross_border_draw, merchant_country, countries)
-    cross_border = payee_country != countries
+    payee_country = np.where(rng.random(size) < CROSS_BORDER_RATE, merchant_country, countries)
 
-    approval_base = np.array([APPROVAL_RATE_BY_RAIL[r] for r in rails])
+    approval_base = np.array([APPROVAL_RATE_BY_RAIL[rail] for rail in rails])
     control = merchants["control_strength"].to_numpy()[merchant_index]
-    approval_probability = np.clip(approval_base + 0.03 * (control - 0.5), 0.60, 0.995)
-    approved = rng.random(size) < approval_probability
+    approved = rng.random(size) < np.clip(
+        approval_base + CONTROL_APPROVAL_WEIGHT * (control - 0.5),
+        MIN_APPROVAL_RATE,
+        MAX_APPROVAL_RATE,
+    )
     decline_codes = sample_decline_codes(population.config.decline_mix_region, size, rng)
-    response_code = np.where(approved, "00", decline_codes)
+    response_code = np.where(approved, APPROVED_RESPONSE_CODE, decline_codes)
 
-    event_ids = [str(seeded_uuid(f"{purpose}:event", offset + i)) for i in range(size)]
-    label_available = timestamps + pd.Timedelta(days=population.config.label_embargo_days)
-
-    frame = pd.DataFrame(
-        {
-            "event_id": event_ids,
-            "event_ts": timestamps,
-            "rail": rails,
-            "amount": amount,
-            "currency": currency,
-            "amount_inr": amount_inr,
-            "payer_entity_id": holders["entity_id"].to_numpy()[holder_index],
-            "payee_entity_id": payee,
-            "payer_country": countries,
-            "payee_country": payee_country,
-            "cross_border": cross_border,
-            "payer_name_hash": holders["payer_name_hash"].to_numpy()[holder_index],
-            "payer_kyc_level": holders["kyc_level"].to_numpy()[holder_index],
-            "payer_balance_band": holders["balance_band"].to_numpy()[holder_index],
-            "is_fraud": False,
-            "vector_id": None,
-            "campaign_id": None,
-            "red_team_round": None,
-            "label_available_ts": label_available,
-        }
+    frame = _core_block(
+        population,
+        holder_index,
+        timestamps,
+        rails,
+        payee,
+        countries,
+        payee_country,
+        currency,
+        amount,
+        amount_inr,
+        response_code,
+        purpose,
+        offset,
     )
-    frame["mutation_lineage"] = [[] for _ in range(size)]
 
-    _attach_card_block(
-        frame, population, holder_index, merchant_index, is_card, is_cp, response_code, rng
-    )
+    _attach_card_block(frame, population, holder_index, merchant_index, is_card, is_cp, rng)
     _attach_threeds_block(frame, population, holder_index, is_cnp, rng)
     _attach_device_block(frame, population, holder_index, rng)
     _attach_upi_block(frame, population, holder_index, is_upi, timestamps, rng)
@@ -357,7 +409,6 @@ def _build_block(
         frame, population, holder_index, is_agentic, merchant_ids, timestamps, amount, rng
     )
 
-    frame["response_code"] = response_code
     for column in CES_COLUMNS:
         if column not in frame.columns:
             frame[column] = None
@@ -371,7 +422,6 @@ def _attach_card_block(
     merchant_index: np.ndarray,
     is_card: np.ndarray,
     is_cp: np.ndarray,
-    response_code: np.ndarray,
     rng: np.random.Generator,
 ) -> None:
     size = holder_index.size
@@ -391,7 +441,6 @@ def _attach_card_block(
     frame["pos_entry_mode"] = np.where(is_card, entry_mode, None)
     frame["processing_code"] = np.where(is_card, "000000", None)
     frame["mti"] = np.where(is_card, "0100", None)
-    frame["response_code"] = np.where(is_card, response_code, None)
     frame["avs_result"] = np.where(
         is_card,
         rng.choice(["Y", "A", "Z", "N", "U"], size=size, p=[0.72, 0.08, 0.06, 0.08, 0.06]),

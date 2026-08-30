@@ -301,112 +301,143 @@ def _first_occurrence(frame: pd.DataFrame, left: str, right: str) -> np.ndarray:
     return first.reindex(frame.index).astype("int8").to_numpy()
 
 
-def compute_features(frame: pd.DataFrame, context: FeatureContext | None = None) -> pd.DataFrame:
-    """Every feature in FEATURE_NAMES, aligned to the input frame's index."""
-    context = context or FeatureContext()
-    features = velocity_features(frame)
-
-    amount = pd.to_numeric(frame["amount"], errors="coerce").to_numpy("float64")
-    event_ts = pd.to_datetime(frame["event_ts"], utc=True)
-
+def personal_deviation_features(
+    frame: pd.DataFrame, context: FeatureContext, event_ts: pd.Series, amount: np.ndarray
+) -> dict[str, np.ndarray]:
     history_mean = rolling_by_key(frame, "payer_entity_id", "7d", "amount", "mean").to_numpy()
     history_std = rolling_by_key(frame, "payer_entity_id", "7d", "amount", "std").to_numpy()
     denominator = np.where(
         np.isfinite(history_std) & (history_std > MIN_STD_FOR_Z), history_std, np.nan
     )
-    features["amount_z_vs_entity_history"] = np.nan_to_num((amount - history_mean) / denominator)
+    hours = event_ts.dt.hour.to_numpy("float64") + event_ts.dt.minute.to_numpy("float64") / 60.0
+    return {
+        "amount_z_vs_entity_history": np.nan_to_num((amount - history_mean) / denominator),
+        "circadian_loglik": _von_mises_loglik(
+            hours,
+            context.lookup(context.circadian_mu, frame["payer_entity_id"], 0.0),
+            context.lookup(
+                context.circadian_kappa, frame["payer_entity_id"], DEFAULT_CIRCADIAN_KAPPA
+            ),
+        ),
+        "mcc_novelty_for_entity": _first_occurrence(frame, "payer_entity_id", "mcc"),
+        "impossible_travel_kmh": _haversine_kmh(
+            frame,
+            context.lookup(context.merchant_lat, frame["payee_entity_id"], 0.0),
+            context.lookup(context.merchant_lon, frame["payee_entity_id"], 0.0),
+        ),
+    }
 
-    mu = context.lookup(context.circadian_mu, frame["payer_entity_id"], 0.0)
-    kappa = context.lookup(
-        context.circadian_kappa, frame["payer_entity_id"], DEFAULT_CIRCADIAN_KAPPA
-    )
-    features["circadian_loglik"] = _von_mises_loglik(
-        event_ts.dt.hour.to_numpy("float64") + event_ts.dt.minute.to_numpy("float64") / 60.0,
-        mu,
-        kappa,
-    )
 
-    features["mcc_novelty_for_entity"] = _first_occurrence(frame, "payer_entity_id", "mcc")
-    merchant_lat = context.lookup(context.merchant_lat, frame["payee_entity_id"], 0.0)
-    merchant_lon = context.lookup(context.merchant_lon, frame["payee_entity_id"], 0.0)
-    features["impossible_travel_kmh"] = _haversine_kmh(frame, merchant_lat, merchant_lon)
+def _payee_age_hours(
+    frame: pd.DataFrame, context: FeatureContext, event_ts: pd.Series
+) -> np.ndarray:
+    """The beneficiary's own first-seen timestamp when the rail carries one, and the
+    entity's creation date otherwise."""
+    ages = _entity_age_hours(frame, "payee_entity_id", context, event_ts)
+    if "beneficiary_first_seen_ts" not in frame.columns:
+        return ages
+    explicit = frame["beneficiary_first_seen_ts"].notna().to_numpy()
+    return np.where(explicit, _hours_since(frame, "beneficiary_first_seen_ts"), ages)
 
-    features["first_time_payee"] = _first_occurrence(frame, "payer_entity_id", "payee_entity_id")
-    payee_age = _entity_age_hours(frame, "payee_entity_id", context, event_ts)
-    beneficiary = (
-        frame["beneficiary_first_seen_ts"] if "beneficiary_first_seen_ts" in frame.columns else None
-    )
-    if beneficiary is not None:
-        payee_age = np.where(
-            beneficiary.notna().to_numpy(),
-            _hours_since(frame, "beneficiary_first_seen_ts"),
-            payee_age,
-        )
-    features["payee_age_hours"] = payee_age
-    features["device_age_hours"] = _hours_since(frame, "device_first_seen_ts")
-    features["cross_border"] = frame["cross_border"].astype("int8")
-    features["sca_exempt_flag"] = (
-        frame.get("sca_exempt_reason", pd.Series(index=frame.index, dtype="object"))
-        .notna()
-        .astype("int8")
-    )
-    features["bin_seq_entropy"] = bin_sequence_entropy(frame)
-    features["merchant_benford_dev_24h"] = merchant_benford_deviation(frame)
-    features["merchant_control_strength"] = context.lookup(
-        context.merchant_control_strength, frame["payee_entity_id"], 0.5
-    )
-    features["terminal_age_days"] = (
-        _entity_age_hours(frame, "terminal_id", context, event_ts) / 24.0
-        if "terminal_id" in frame.columns
-        else np.zeros(len(frame))
-    )
-    features["distinct_pan_per_device_10m"] = (
-        rolling_distinct(frame, "device_id", "pan_token", "10min").to_numpy()
-        if {"device_id", "pan_token"} <= set(frame.columns)
-        else np.zeros(len(frame))
-    )
 
-    features["fanin_payee_24h"] = rolling_distinct(
-        frame, "payee_entity_id", "payer_entity_id", "24h"
-    ).to_numpy()
-    features["fanout_payer_24h"] = rolling_distinct(
-        frame, "payer_entity_id", "payee_entity_id", "24h"
-    ).to_numpy()
-    features["payee_bank_degree"] = (
-        rolling_distinct(frame, "payee_entity_id", "issuer_id", "7d").to_numpy()
-        if "issuer_id" in frame.columns
-        else np.zeros(len(frame))
-    )
-    features["payer_pagerank"] = context.lookup(context.pagerank, frame["payer_entity_id"], 0.0)
-    features["payee_pagerank"] = context.lookup(context.pagerank, frame["payee_entity_id"], 0.0)
-    features["component_size"] = context.lookup(
-        context.component_size, frame["payer_entity_id"], 1.0
-    )
+def structural_features(
+    frame: pd.DataFrame, context: FeatureContext, event_ts: pd.Series
+) -> dict[str, np.ndarray]:
+    columns = set(frame.columns)
+    return {
+        "first_time_payee": _first_occurrence(frame, "payer_entity_id", "payee_entity_id"),
+        "payee_age_hours": _payee_age_hours(frame, context, event_ts),
+        "device_age_hours": _hours_since(frame, "device_first_seen_ts"),
+        "cross_border": frame["cross_border"].astype("int8").to_numpy(),
+        "sca_exempt_flag": _column(frame, "sca_exempt_reason").notna().astype("int8").to_numpy(),
+        "bin_seq_entropy": bin_sequence_entropy(frame),
+        "merchant_benford_dev_24h": merchant_benford_deviation(frame),
+        "merchant_control_strength": context.lookup(
+            context.merchant_control_strength, frame["payee_entity_id"], 0.5
+        ),
+        "terminal_age_days": (
+            _entity_age_hours(frame, "terminal_id", context, event_ts) / 24.0
+            if "terminal_id" in columns
+            else np.zeros(len(frame))
+        ),
+        "distinct_pan_per_device_10m": (
+            rolling_distinct(frame, "device_id", "pan_token", "10min").to_numpy()
+            if {"device_id", "pan_token"} <= columns
+            else np.zeros(len(frame))
+        ),
+    }
 
-    features["mandate_scope_breach"] = mandate_scope_breach(frame)
-    features["cart_hash_mismatch"] = cart_hash_mismatch(frame)
-    attestation = _column(frame, "agent_attestation_valid")
-    features["attestation_invalid"] = attestation.eq(False).fillna(False).astype("int8")
-    features["nonce_reused"] = _nonce_reused(frame)
+
+def graph_features(frame: pd.DataFrame, context: FeatureContext) -> dict[str, np.ndarray]:
+    return {
+        "fanin_payee_24h": rolling_distinct(
+            frame, "payee_entity_id", "payer_entity_id", "24h"
+        ).to_numpy(),
+        "fanout_payer_24h": rolling_distinct(
+            frame, "payer_entity_id", "payee_entity_id", "24h"
+        ).to_numpy(),
+        "payee_bank_degree": (
+            rolling_distinct(frame, "payee_entity_id", "issuer_id", "7d").to_numpy()
+            if "issuer_id" in frame.columns
+            else np.zeros(len(frame))
+        ),
+        "payer_pagerank": context.lookup(context.pagerank, frame["payer_entity_id"], 0.0),
+        "payee_pagerank": context.lookup(context.pagerank, frame["payee_entity_id"], 0.0),
+        "component_size": context.lookup(context.component_size, frame["payer_entity_id"], 1.0),
+    }
+
+
+def agentic_features(frame: pd.DataFrame, amount: np.ndarray) -> dict[str, np.ndarray]:
     ceiling = pd.to_numeric(_column(frame, "mandate_amount_max"), errors="coerce").to_numpy(
         "float64"
     )
-    features["settle_vs_intent_amount_delta"] = np.nan_to_num(
-        np.where(np.isfinite(ceiling) & (ceiling > 0), (amount - ceiling) / ceiling, 0.0)
-    )
-    human_present = _column(frame, "human_present_flag")
-    features["human_present_flag_num"] = (
-        human_present.map({True: 1, False: 0}).fillna(-1).astype("int8")
-    )
+    overshoot = np.where(np.isfinite(ceiling) & (ceiling > 0), (amount - ceiling) / ceiling, 0.0)
+    return {
+        "mandate_scope_breach": mandate_scope_breach(frame).to_numpy(),
+        "cart_hash_mismatch": cart_hash_mismatch(frame).to_numpy(),
+        "attestation_invalid": _column(frame, "agent_attestation_valid")
+        .eq(False)
+        .fillna(False)
+        .astype("int8")
+        .to_numpy(),
+        "nonce_reused": _nonce_reused(frame).to_numpy(),
+        "settle_vs_intent_amount_delta": np.nan_to_num(overshoot),
+        "human_present_flag_num": _boolean_code(frame, "human_present_flag"),
+    }
 
-    features["eci_semantic_code"] = _code_map(frame, "eci_semantic", ECI_SEMANTIC_CODES)
-    features["threeds_flow_code"] = _code_map(frame, "threeds_flow", THREEDS_FLOW_CODES)
-    features["pos_entry_mode_code"] = _code_map(frame, "pos_entry_mode", POS_ENTRY_MODE_CODES)
-    payee_name_match = _column(frame, "payee_name_match")
-    features["payee_name_match_num"] = (
-        payee_name_match.map({True: 1, False: 0}).fillna(-1).astype("int8")
-    )
-    features["upi_txn_type_code"] = _code_map(frame, "upi_txn_type", UPI_TXN_TYPE_CODES)
+
+def rail_features(frame: pd.DataFrame) -> dict[str, np.ndarray]:
+    return {
+        "eci_semantic_code": _code_map(frame, "eci_semantic", ECI_SEMANTIC_CODES).to_numpy(),
+        "threeds_flow_code": _code_map(frame, "threeds_flow", THREEDS_FLOW_CODES).to_numpy(),
+        "pos_entry_mode_code": _code_map(frame, "pos_entry_mode", POS_ENTRY_MODE_CODES).to_numpy(),
+        "payee_name_match_num": _boolean_code(frame, "payee_name_match"),
+        "upi_txn_type_code": _code_map(frame, "upi_txn_type", UPI_TXN_TYPE_CODES).to_numpy(),
+    }
+
+
+def _boolean_code(frame: pd.DataFrame, column: str) -> np.ndarray:
+    """Absent is -1, not 0: LightGBM reads a missing value as informative, and "the flag was
+    never set" is a different statement from "the flag was false"."""
+    return _column(frame, column).map({True: 1, False: 0}).fillna(-1).astype("int8").to_numpy()
+
+
+def compute_features(frame: pd.DataFrame, context: FeatureContext | None = None) -> pd.DataFrame:
+    """Every feature in FEATURE_NAMES, aligned to the input frame's index."""
+    context = context or FeatureContext()
+    amount = pd.to_numeric(frame["amount"], errors="coerce").to_numpy("float64")
+    event_ts = pd.to_datetime(frame["event_ts"], utc=True)
+
+    features = velocity_features(frame)
+    for family in (
+        personal_deviation_features(frame, context, event_ts, amount),
+        structural_features(frame, context, event_ts),
+        graph_features(frame, context),
+        agentic_features(frame, amount),
+        rail_features(frame),
+    ):
+        for name, values in family.items():
+            features[name] = values
 
     return features[list(FEATURE_NAMES)].astype("float32").fillna(0.0)
 
@@ -426,9 +457,8 @@ def _entity_age_hours(
 def _nonce_reused(frame: pd.DataFrame) -> pd.Series:
     if "mandate_nonce" not in frame.columns:
         return pd.Series(0, index=frame.index, dtype="int8")
-    nonce = frame["mandate_nonce"]
     ordered = pd.DataFrame(
-        {"nonce": nonce, "event_ts": pd.to_datetime(frame["event_ts"], utc=True)}
+        {"nonce": frame["mandate_nonce"], "event_ts": pd.to_datetime(frame["event_ts"], utc=True)}
     ).sort_values("event_ts", kind="mergesort")
     repeat = ordered["nonce"].notna() & ordered.duplicated("nonce", keep="first")
     return repeat.reindex(frame.index).fillna(False).astype("int8")
