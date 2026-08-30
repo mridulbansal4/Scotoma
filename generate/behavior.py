@@ -104,6 +104,7 @@ BROWSER_RESOLUTIONS: tuple[str, ...] = (
     "1366x768",
 )
 BROWSER_LANGS: tuple[str, ...] = ("en-IN", "en-US", "en-GB", "de-DE", "fr-FR")
+BROWSER_TZ_OFFSETS: tuple[int, ...] = (330, 0, 60, -300, 480)
 AGENT_PROTOCOL_COLUMN: str = "protocol"
 
 

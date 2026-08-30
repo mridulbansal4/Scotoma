@@ -64,9 +64,10 @@ class AgentImpersonationCampaign:
                 f"V20:{campaign_id}",
                 index,
                 timestamps[index],
-                str(payer["entity_id"]),
+                payer,
+
                 str(merchant["entity_id"]),
-                str(payer["home_country"]),
+
                 str(merchant["home_country"]),
                 float(log_uniform(30.0, 900.0, rng)),
                 agent,
@@ -120,9 +121,10 @@ class MandateReplayCampaign:
                 f"V21:{campaign_id}",
                 index,
                 timestamps[index],
-                str(payer["entity_id"]),
+                payer,
+
                 str(merchant["entity_id"]),
-                str(payer["home_country"]),
+
                 str(merchant["home_country"]),
                 float(log_uniform(25.0, 750.0, rng)),
                 agent,

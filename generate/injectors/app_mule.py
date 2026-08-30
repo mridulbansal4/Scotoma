@@ -46,6 +46,8 @@ def _transfer_row(
     beneficiary_first_seen: pd.Timestamp | None = None,
     upi_txn_type: str | None = None,
     payee_name_match: bool | None = None,
+    kyc_level: str = "FULL",
+    balance_band: str = "MID",
 ) -> dict:
     row = {
         "event_id": str(seeded_uuid(event_key, index)),
@@ -59,8 +61,8 @@ def _transfer_row(
         "payer_country": payer_country,
         "payee_country": payee_country,
         "cross_border": payer_country != payee_country,
-        "payer_kyc_level": "FULL",
-        "payer_balance_band": "MID",
+        "payer_kyc_level": kyc_level,
+        "payer_balance_band": balance_band,
         "response_code": "00",
     }
     if rail == "UPI":
@@ -142,6 +144,8 @@ class AppScamCampaign:
                         beneficiary_first_seen=timestamp
                         - pd.Timedelta(hours=NEW_BENEFICIARY_AGE_HOURS),
                         payee_name_match=False,
+                        kyc_level=str(victim["kyc_level"]),
+                        balance_band=str(victim["balance_band"]),
                     )
                 )
                 amount *= escalation
@@ -207,6 +211,8 @@ class CollectRequestAbuseCampaign:
                 beneficiary_first_seen=timestamps[position] - pd.Timedelta(hours=1),
                 upi_txn_type="collect",
                 payee_name_match=not bool(unknown[position]),
+                kyc_level=str(victim["kyc_level"]),
+                balance_band=str(victim["balance_band"]),
             )
             row["response_code"] = "00" if approved[position] else "05"
             rows.append(row)
@@ -310,6 +316,8 @@ class MuleNetworkCampaign:
                             str(source["home_country"]),
                             str(collector["home_country"]),
                             rng,
+                            kyc_level=str(source["kyc_level"]),
+                            balance_band=str(source["balance_band"]),
                         )
                     )
                     index += 1
@@ -331,6 +339,8 @@ class MuleNetworkCampaign:
                             str(collector["home_country"]),
                             str(onward["home_country"]),
                             rng,
+                            kyc_level=str(collector["kyc_level"]),
+                            balance_band=str(collector["balance_band"]),
                         )
                     )
                     index += 1

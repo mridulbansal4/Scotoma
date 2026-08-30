@@ -6,6 +6,7 @@ import pandas as pd
 from generate.injectors.base import (
     Campaign,
     amount_in_band,
+    browser_profile,
     campaign_subgraph,
     finalise,
     hex_token,
@@ -74,9 +75,7 @@ def _routed_row(
         "cavv_present": not routed_out,
         "threeds_method_completed": not routed_out,
         "device_fingerprint_id": f"fp_{hex_token(rng, 16)}",
-        "browser_screen_res": "1440x900",
-        "browser_tz_offset": 60,
-        "browser_lang": "de-DE",
+        **browser_profile(rng),
         "sca_exempt_reason": "tra" if routed_out else None,
         "device_id": str(holder["primary_device_id"]),
         "device_os": "WINDOWS",

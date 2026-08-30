@@ -6,7 +6,9 @@ import pandas as pd
 
 from generate.injectors.base import (
     Campaign,
+    browser_profile,
     campaign_subgraph,
+    eci_for,
     finalise,
     hex_token,
     to_inr_array,
@@ -31,6 +33,7 @@ def _ring_row(
     identity: pd.Series,
     merchant: pd.Series,
     device: dict[str, str],
+    device_first_seen: pd.Timestamp,
     amount: float,
     rng: np.random.Generator,
 ) -> dict:
@@ -48,8 +51,8 @@ def _ring_row(
         "payer_country": str(identity["home_country"]),
         "payee_country": str(merchant["home_country"]),
         "cross_border": str(identity["home_country"]) != str(merchant["home_country"]),
-        "payer_kyc_level": "MIN",
-        "payer_balance_band": "LOW",
+        "payer_kyc_level": str(identity["kyc_level"]),
+        "payer_balance_band": str(identity["balance_band"]),
         "pan_token": str(identity["pan_token"]),
         "bin": str(identity["bin"]),
         "issuer_id": str(identity["issuer_id"]),
@@ -67,21 +70,19 @@ def _ring_row(
         "threeds_version": "2.2.0",
         "threeds_flow": "frictionless",
         "card_network": network,
-        "eci": "06" if network == "VISA" else "01",
+        "eci": eci_for(network, "attempted"),
         "eci_semantic": "attempted",
         "cavv_present": True,
         "threeds_method_completed": True,
         "device_fingerprint_id": f"fp_{hex_token(rng, 16)}",
-        "browser_screen_res": "1366x768",
-        "browser_tz_offset": 330,
-        "browser_lang": "en-IN",
+        **browser_profile(rng),
         "device_id": device["device_id"],
         "device_os": device["device_os"],
-        "device_first_seen_ts": timestamp,
+        "device_first_seen_ts": device_first_seen,
         "ip": device["ip"],
         "ip_asn": device["ip_asn"],
         "ip_country": device["ip_country"],
-        "ip_proxy_flag": True,
+        "ip_proxy_flag": bool(device.get("ip_proxy_flag", False)),
         "user_agent_hash": hex_token(rng, 64),
     }
 
@@ -121,8 +122,12 @@ class SyntheticIdentityRingCampaign:
         devices = [
             population.new_attacker_device(rng) for _ in range(max(1, ring_size // share_factor))
         ]
+        first_seen = pd.Series(
+            population.devices["created_ts"].to_numpy(),
+            index=population.devices["entity_id"].to_numpy(),
+        )
         rows = self._ramp(
-            identities, merchants, devices, params, window, slope, thin_file_days, rng
+            identities, merchants, devices, first_seen, params, window, slope, thin_file_days, rng
         )
         if not rows:
             raise InjectorProducedNothing("V07 produced no ring activity")
@@ -145,6 +150,7 @@ class SyntheticIdentityRingCampaign:
         identities: pd.DataFrame,
         merchants: pd.DataFrame,
         devices: list[dict[str, str]],
+        device_first_seen: pd.Series,
         params: dict,
         window: TimeWindow,
         slope: float,
@@ -177,6 +183,7 @@ class SyntheticIdentityRingCampaign:
                         identity,
                         merchant,
                         device,
+                        device_first_seen.get(device["device_id"], timestamp),
                         amount * jitter,
                         rng,
                     )

@@ -90,6 +90,30 @@ def cart_hash(line_items: list[dict]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def browser_profile(rng: np.random.Generator) -> dict[str, object]:
+    """Browser fields drawn from the same distributions legitimate traffic uses.
+
+    Pinning them to constants inside an injector labels the campaign: the detector learns
+    the constant rather than the behaviour, and every vector sharing that constant becomes
+    free to detect, including a held-out one."""
+    from generate.behavior import BROWSER_LANGS, BROWSER_RESOLUTIONS, BROWSER_TZ_OFFSETS
+
+    return {
+        "browser_screen_res": str(rng.choice(BROWSER_RESOLUTIONS)),
+        "browser_tz_offset": int(rng.choice(BROWSER_TZ_OFFSETS)),
+        "browser_lang": str(rng.choice(BROWSER_LANGS)),
+    }
+
+
+def eci_for(network: str, semantic: str) -> str:
+    from schema.ces import ECI_SEMANTICS
+
+    for code, meaning in ECI_SEMANTICS[network].items():
+        if meaning == semantic:
+            return code
+    raise KeyError(f"no eci for {network}/{semantic}")
+
+
 def blank_rows(count: int) -> dict[str, list]:
     return {column: [None] * count for column in CES_COLUMNS}
 
@@ -194,9 +218,8 @@ def agentic_row(
     event_key: str,
     index: int,
     timestamp: pd.Timestamp,
-    payer_id: str,
+    payer: pd.Series,
     payee_id: str,
-    payer_country: str,
     payee_country: str,
     amount: float,
     agent: pd.Series,
@@ -208,6 +231,8 @@ def agentic_row(
     resulting signal attributable to a single mechanism."""
     line_items = [{"sku": f"SKU-{index % 9999:04d}", "qty": 1, "unit_price": round(amount, 2)}]
     digest = cart_hash(line_items)
+    payer_id = str(payer["entity_id"])
+    payer_country = str(payer["home_country"])
     return {
         "event_id": str(seeded_uuid(event_key, index)),
         "event_ts": timestamp,
@@ -220,12 +245,12 @@ def agentic_row(
         "payer_country": payer_country,
         "payee_country": payee_country,
         "cross_border": payer_country != payee_country,
-        "payer_kyc_level": "FULL",
-        "payer_balance_band": "HIGH",
+        "payer_kyc_level": str(payer["kyc_level"]),
+        "payer_balance_band": str(payer["balance_band"]),
         "response_code": "00",
         "agent_id": str(agent["entity_id"]),
         "agent_operator": str(agent["agent_operator"]),
-        "protocol": "AP2",
+        "protocol": str(agent["protocol"]) if str(agent["protocol"]) == "AP2" else "AP2",
         "agent_attestation_valid": True,
         "intent_mandate_id": str(seeded_uuid(f"{event_key}:intent", index)),
         "cart_mandate_id": str(seeded_uuid(f"{event_key}:cart", index)),

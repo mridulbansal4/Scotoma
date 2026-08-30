@@ -7,8 +7,10 @@ from generate.injectors.base import (
     LIVE_PAN_HIT_RATE,
     Campaign,
     amount_in_band,
+    browser_profile,
     cadence_timestamps,
     campaign_subgraph,
+    eci_for,
     finalise,
     hex_token,
     log_uniform,
@@ -49,6 +51,7 @@ def _probe_rows(
     hits: np.ndarray,
     pans: list[str],
     payers: pd.DataFrame,
+    devices_frame: pd.DataFrame,
     rng: np.random.Generator,
 ) -> list[dict]:
     size = len(timestamps)
@@ -58,11 +61,15 @@ def _probe_rows(
     codes = [code for code, _ in ENUMERATION_DECLINE_MIX]
     weights = [weight for _, weight in ENUMERATION_DECLINE_MIX]
     declines = rng.choice(codes, size=size, p=weights)
+    first_seen = pd.Series(
+        devices_frame["created_ts"].to_numpy(), index=devices_frame["entity_id"].to_numpy()
+    )
     rows = []
     for position in range(size):
         merchant = merchant_pick[position]
         device = devices[int(device_pick[position])]
         payer = payers.iloc[position % len(payers)]
+        network = str(payer["card_network"])
         rows.append(
             {
                 "event_id": str(seeded_uuid(f"{bin_prefix}:{device['device_id']}:probe", position)),
@@ -77,8 +84,8 @@ def _probe_rows(
                 "payee_country": str(merchants["home_country"].to_numpy()[merchant]),
                 "cross_border": str(payer["home_country"])
                 != str(merchants["home_country"].to_numpy()[merchant]),
-                "payer_kyc_level": "NONE",
-                "payer_balance_band": "LOW",
+                "payer_kyc_level": str(payer["kyc_level"]),
+                "payer_balance_band": str(payer["balance_band"]),
                 "pan_token": f"tok_{pans[position][-16:]}",
                 "bin": bin_prefix,
                 "issuer_id": f"ISS_{int(rng.integers(0, 40)):03d}",
@@ -89,28 +96,26 @@ def _probe_rows(
                 "processing_code": "000000",
                 "mti": "0100",
                 "response_code": "00" if hits[position] else str(declines[position]),
-                "avs_result": "N",
+                "avs_result": "Y" if hits[position] else "N",
                 "cvv_result": "M" if hits[position] else "N",
                 "terminal_id": str(merchants["terminal_id"].to_numpy()[merchant]),
                 "merchant_country": str(merchants["home_country"].to_numpy()[merchant]),
                 "threeds_version": "2.2.0",
                 "threeds_flow": "none",
-                "card_network": "VISA",
-                "eci": "07",
+                "card_network": network,
+                "eci": eci_for(network, "not_authenticated"),
                 "eci_semantic": "not_authenticated",
                 "cavv_present": False,
                 "threeds_method_completed": False,
                 "device_fingerprint_id": f"fp_{hex_token(rng, 16)}",
-                "browser_screen_res": "1920x1080",
-                "browser_tz_offset": 0,
-                "browser_lang": "en-US",
+                **browser_profile(rng),
                 "device_id": device["device_id"],
                 "device_os": device["device_os"],
-                "device_first_seen_ts": timestamps[0],
+                "device_first_seen_ts": first_seen.get(device["device_id"], timestamps[0]),
                 "ip": device["ip"],
                 "ip_asn": device["ip_asn"],
                 "ip_country": device["ip_country"],
-                "ip_proxy_flag": True,
+                "ip_proxy_flag": bool(device.get("ip_proxy_flag", False)),
                 "user_agent_hash": hex_token(rng, 64),
             }
         )
@@ -159,7 +164,16 @@ class EnumerationCampaign:
         payers = population.sample_cardholders(min(24, population.n_cardholders), rng)
 
         rows = _probe_rows(
-            timestamps, merchants, devices, bin_prefix, amounts, hits, pans, payers, rng
+            timestamps,
+            merchants,
+            devices,
+            bin_prefix,
+            amounts,
+            hits,
+            pans,
+            payers,
+            population.devices,
+            rng,
         )
         events = finalise(rows, self.vector_id, campaign_id, params.get("_lineage", []))
         events["amount_inr"] = to_inr_array(
@@ -213,7 +227,16 @@ class BinAttackCampaign:
             hits = rng.random(count) < LIVE_PAN_HIT_RATE
             rows.extend(
                 _probe_rows(
-                    timestamps, merchants, devices, bin_prefix, amounts, hits, pans, payers, rng
+                    timestamps,
+                    merchants,
+                    devices,
+                    bin_prefix,
+                    amounts,
+                    hits,
+                    pans,
+                    payers,
+                    population.devices,
+                    rng,
                 )
             )
         if not rows:

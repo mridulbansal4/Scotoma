@@ -6,6 +6,7 @@ import pandas as pd
 from defend.features import FEATURE_NAMES
 from generate.injectors.base import (
     Campaign,
+    browser_profile,
     campaign_subgraph,
     finalise,
     spread_timestamps,
@@ -37,6 +38,7 @@ def _evasion_row(
     merchant: pd.Series,
     amount: float,
     budget: float,
+    rng: np.random.Generator,
 ) -> dict:
     """A transaction that stays inside every band the holder normally occupies."""
     network = str(holder["card_network"])
@@ -76,9 +78,7 @@ def _evasion_row(
         "cavv_present": True,
         "threeds_method_completed": True,
         "device_fingerprint_id": str(holder["device_fingerprint_id"]),
-        "browser_screen_res": "1170x2532",
-        "browser_tz_offset": 330,
-        "browser_lang": "en-IN",
+        **browser_profile(rng),
         "sca_exempt_reason": "low_value" if budget < LOW_VALUE_EXEMPTION_BUDGET else None,
         "device_id": str(holder["primary_device_id"]),
         "device_os": "ANDROID",
@@ -129,7 +129,7 @@ class ScorerEvasionCampaign:
             )
             rows.append(
                 _evasion_row(
-                    campaign_id, index, timestamps[index], holder, merchant, amount, budget
+                    campaign_id, index, timestamps[index], holder, merchant, amount, budget, rng
                 )
             )
 

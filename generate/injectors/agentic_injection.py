@@ -71,9 +71,10 @@ class CartInjectionCampaign:
                 f"V19:{campaign_id}",
                 index,
                 timestamps[index],
-                str(payer["entity_id"]),
+                payer,
+
                 str(merchant["entity_id"]),
-                str(payer["home_country"]),
+
                 str(merchant["home_country"]),
                 amount,
                 agent,

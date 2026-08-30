@@ -26,6 +26,9 @@ LOGNORMAL_MU_DEFAULT: float = 3.50
 LOGNORMAL_SIGMA_DEFAULT: float = 1.10
 DEVICE_SHARING_RATE: float = 0.08
 IP_PROXY_RATE: float = 0.04
+# Attackers reach for anonymising infrastructure far more often than ordinary users do.
+# That is a behavioural signal the detector may legitimately learn.
+ATTACKER_PROXY_RATE: float = 0.55
 MERCHANT_CONTROL_BETA: tuple[float, float] = (2.0, 2.0)
 
 N_ISSUERS: int = 40
@@ -191,14 +194,25 @@ class Population:
         return len(self.accounts)
 
     def new_attacker_device(self, rng: np.random.Generator) -> dict[str, str]:
+        """A device the attacker controls, drawn from the ordinary population.
+
+        Attacker hardware must be indistinguishable from everyone else's by identity alone.
+        Minting devices in their own namespace, on one operating system, behind one country,
+        hands the detector a label: it learns "this device shape is fraud" from the vectors
+        it trains on and then recognises the held-out family for free, which makes the
+        holdout measure nothing. What is left is behaviour, which is what the features are
+        supposed to read. Proxy use stays elevated because that is a real signal rather than
+        an identity giveaway."""
         self.attacker_device_counter += 1
-        index = self.attacker_device_counter
+        device = self.devices.iloc[int(rng.integers(0, len(self.devices)))]
+        address = self.ips.iloc[int(rng.integers(0, len(self.ips)))]
         return {
-            "device_id": f"DV_ATK_{index:04d}",
-            "device_os": "LINUX",
-            "ip": f"{DOCUMENTATION_IP_BLOCKS[1]}.{int(rng.integers(1, 254))}",
-            "ip_asn": f"AS{int(rng.integers(200000, 209999))}",
-            "ip_country": "NL",
+            "device_id": str(device["entity_id"]),
+            "device_os": str(device["device_os"]),
+            "ip": str(address["entity_id"]),
+            "ip_asn": str(address["ip_asn"]),
+            "ip_country": str(address["ip_country"]),
+            "ip_proxy_flag": bool(rng.random() < ATTACKER_PROXY_RATE),
         }
 
     def sample_weak_bin(self, rng: np.random.Generator) -> str:
@@ -474,6 +488,8 @@ def _build_accounts(config: PayLoopConfig, cardholders: pd.DataFrame) -> pd.Data
                 for c, i in zip(countries, rng.integers(0, 40, size=count), strict=True)
             ],
             "vpa": [f"user{i}@payloop" for i in range(count)],
+            "kyc_level": rng.choice(["FULL", "MIN", "NONE"], size=count, p=[0.78, 0.17, 0.05]),
+            "balance_band": rng.choice(["LOW", "MID", "HIGH"], size=count, p=[0.40, 0.45, 0.15]),
             "created_ts": created,
         }
     )
