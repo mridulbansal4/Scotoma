@@ -533,6 +533,20 @@ def extend_pool(context: LoopContext, campaigns: list, active, round_index: int)
     return hardest
 
 
+def _candidate_is_kept(context: LoopContext, candidate: Detector, batch: pd.DataFrame) -> bool:
+    """Both models scored on the same held-out frame, at the same moment.
+
+    Comparing a freshly fitted candidate's own validation score against the incumbent's
+    stored one is not a comparison: the incumbent's was measured on a smaller pool, and the
+    slice each was calibrated on is not held out from it."""
+    frame = (
+        pd.concat([context.evaluation_legit, batch], ignore_index=True)
+        .sort_values("event_ts")
+        .reset_index(drop=True)
+    )
+    return candidate.evaluate(frame).pr_auc >= context.detector.evaluate(frame).pr_auc
+
+
 def run_round(context: LoopContext, round_index: int) -> dict:
     started = datetime.now(UTC)
     state = context.detector.state()
@@ -580,7 +594,7 @@ def run_round(context: LoopContext, round_index: int) -> dict:
     candidate = Detector(context.config, context=context.context, sim_start=context.sim_start).fit(
         context.pool, blind=context.blind_events
     )
-    retained = candidate.pr_auc_holdout() >= context.detector.pr_auc_holdout()
+    retained = _candidate_is_kept(context, candidate, batch)
     if retained:
         context.detector = candidate
         context.detector.export_onnx()

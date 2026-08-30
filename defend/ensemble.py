@@ -110,7 +110,7 @@ class Detector:
         self.threshold: float = 0.5
         self.gnn_enabled: bool = False
         self.gnn_measured_lift: float | None = None
-        self.holdout_pr_auc: float = 0.0
+        self.validation_pr_auc: float = 0.0
         self.top_shap_features: list[str] = []
         self.per_vector_recall: dict[str, float] = {}
         self.brier_calibrated: float = 0.0
@@ -185,7 +185,7 @@ class Detector:
 
         evaluation = self.evaluate(split.validation)
         self.suspicious_pr_auc = evaluation.pr_auc > SUSPICIOUS_PR_AUC
-        self.holdout_pr_auc = evaluation.pr_auc
+        self.validation_pr_auc = evaluation.pr_auc
         self.per_vector_recall = evaluation.per_vector_recall
         return self
 
@@ -322,8 +322,11 @@ class Detector:
             results[vector_id] = float(average_precision_score(subset_labels, scores[selector]))
         return results
 
-    def pr_auc_holdout(self) -> float:
-        return self.holdout_pr_auc
+    def pr_auc_validation(self) -> float:
+        """PR-AUC on the calibration slice. Optimistic by construction, so it is a sanity
+        reading rather than a basis for choosing between models; loop.controller compares
+        candidates on a held-out frame instead."""
+        return self.validation_pr_auc
 
     def state(self) -> DetectorState:
         survivors = [vector for vector, recall in self.per_vector_recall.items() if recall < 0.6]

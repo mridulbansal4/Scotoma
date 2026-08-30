@@ -114,7 +114,7 @@ def test_suspicious_pr_auc_is_flagged() -> None:
     # A deliberately leaky column: the label written straight into a feature.
     leaky["amount"] = np.where(leaky["is_fraud"], 999_999.0, leaky["amount"])
     detector = Detector(world.config, sim_start=SIM_START).fit(leaky)
-    assert detector.suspicious_pr_auc == (detector.holdout_pr_auc > SUSPICIOUS_PR_AUC)
+    assert detector.suspicious_pr_auc == (detector.validation_pr_auc > SUSPICIOUS_PR_AUC)
 
 
 def test_reliability_curve_covers_predictions() -> None:

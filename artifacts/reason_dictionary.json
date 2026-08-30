@@ -13,9 +13,29 @@
       "label": "Agent attestation could not be verified"
     },
     {
+      "code": "R057",
+      "feature": "bin_seq_entropy",
+      "label": "Card numbers seen on this device span an improbable range"
+    },
+    {
       "code": "R047",
       "feature": "cart_hash_mismatch",
       "label": "Cart contents changed after user approval"
+    },
+    {
+      "code": "R056",
+      "feature": "circadian_loglik",
+      "label": "Transaction time unusual for this customer"
+    },
+    {
+      "code": "R065",
+      "feature": "component_size",
+      "label": "Entity sits in an unusually large linked cluster"
+    },
+    {
+      "code": "R058",
+      "feature": "cross_border",
+      "label": "Payment crosses a border"
     },
     {
       "code": "R031",
@@ -23,9 +43,19 @@
       "label": "Elevated decline rate on originating network"
     },
     {
+      "code": "R055",
+      "feature": "device_age_hours",
+      "label": "Device first seen very recently"
+    },
+    {
       "code": "R014",
       "feature": "distinct_pan_per_device_10m",
       "label": "Unusual velocity on this device"
+    },
+    {
+      "code": "R052",
+      "feature": "eci_semantic_code",
+      "label": "Authentication outcome weaker than usual for this customer"
     },
     {
       "code": "R033",
@@ -33,9 +63,19 @@
       "label": "Many payers converging on one beneficiary"
     },
     {
+      "code": "R064",
+      "feature": "fanout_payer_24h",
+      "label": "Payer sending to many beneficiaries"
+    },
+    {
       "code": "R011",
       "feature": "first_time_payee",
       "label": "First payment to this beneficiary"
+    },
+    {
+      "code": "R069",
+      "feature": "human_present_flag_num",
+      "label": "No human present at authorisation"
     },
     {
       "code": "R018",
@@ -46,6 +86,16 @@
       "code": "R048",
       "feature": "mandate_scope_breach",
       "label": "Payment outside the authorised mandate scope"
+    },
+    {
+      "code": "R060",
+      "feature": "mcc_novelty_for_entity",
+      "label": "First purchase in this merchant category"
+    },
+    {
+      "code": "R061",
+      "feature": "merchant_benford_dev_24h",
+      "label": "Merchant amount distribution deviates from expectation"
     },
     {
       "code": "R022",
@@ -61,7 +111,58 @@
       "code": "R012",
       "feature": "payee_age_hours",
       "label": "Beneficiary account recently created"
+    },
+    {
+      "code": "R063",
+      "feature": "payee_bank_degree",
+      "label": "Beneficiary bank serves an unusual number of payers"
+    },
+    {
+      "code": "R070",
+      "feature": "payee_name_match_num",
+      "label": "Beneficiary name did not match the account record"
+    },
+    {
+      "code": "R067",
+      "feature": "payee_pagerank",
+      "label": "Beneficiary central to a linked entity cluster"
+    },
+    {
+      "code": "R066",
+      "feature": "payer_pagerank",
+      "label": "Payer central to a linked entity cluster"
+    },
+    {
+      "code": "R054",
+      "feature": "pos_entry_mode_code",
+      "label": "Entry mode unusual for this acceptance channel"
+    },
+    {
+      "code": "R059",
+      "feature": "sca_exempt_flag",
+      "label": "Authentication exemption claimed"
+    },
+    {
+      "code": "R068",
+      "feature": "settle_vs_intent_amount_delta",
+      "label": "Settled amount differs from the authorised ceiling"
+    },
+    {
+      "code": "R062",
+      "feature": "terminal_age_days",
+      "label": "Terminal recently commissioned"
+    },
+    {
+      "code": "R053",
+      "feature": "threeds_flow_code",
+      "label": "Payment did not complete a strong authentication challenge"
+    },
+    {
+      "code": "R071",
+      "feature": "upi_txn_type_code",
+      "label": "Collect request rather than a push payment"
     }
   ],
-  "perturbation": "interventional"
+  "perturbation": "interventional",
+  "velocity_code": "R080"
 }
