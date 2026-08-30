@@ -14,7 +14,7 @@ const sofia = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'PayLoop',
+  title: 'Scotoma',
   description: 'Closed-loop adversarial fraud engine — blind-spot measurement, not a guarantee.',
 };
 
@@ -31,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </h2>
             <div className="mt-12 h-px w-full bg-white/30" />
             <p className="mt-6 text-data text-white/70">
-              PayLoop — offline adversarial testing lab. Every figure on these screens is read from
+              Scotoma — offline adversarial testing lab. Every figure on these screens is read from
               committed run artefacts. Nothing on this site makes a network call.
             </p>
           </div>

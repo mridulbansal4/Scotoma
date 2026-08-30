@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, Search, X } from 'lucide-react';
 import { useState } from 'react';
+import { ScotomaMark } from './ScotomaMark';
 
 const LINKS = [
   { href: '/atlas', label: 'Attack Atlas' },
@@ -22,12 +23,9 @@ export function NavPill() {
   return (
     <div className="fixed inset-x-0 top-6 z-50 px-4 lg:px-12">
       <nav className="mx-auto flex max-w-content items-center justify-between rounded-pill bg-white px-5 py-3 shadow-lift lg:px-10 lg:py-4">
-        <Link href="/atlas" className="flex items-center gap-3" aria-label="PayLoop home">
-          <span className="relative flex h-6 w-10 items-center" aria-hidden>
-            <span className="absolute left-0 h-6 w-6 rounded-full bg-mc-red" />
-            <span className="absolute left-4 h-6 w-6 rounded-full bg-mc-yellow mix-blend-multiply" />
-          </span>
-          <span className="text-navlink font-medium">PayLoop</span>
+        <Link href="/atlas" className="flex items-center gap-3 text-ink" aria-label="Scotoma home">
+          <ScotomaMark size={26} />
+          <span className="text-navlink font-medium">Scotoma</span>
         </Link>
 
         <div className="hidden items-center gap-12 lg:flex">

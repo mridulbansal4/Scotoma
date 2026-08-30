@@ -216,7 +216,7 @@
     "value": "6%"
   },
   {
-    "approved_text": "On the ULB dataset the same model scores 0.957 ROC-AUC and 0.708 PR-AUC, which is why PayLoop never leads with ROC.",
+    "approved_text": "On the ULB dataset the same model scores 0.957 ROC-AUC and 0.708 PR-AUC, which is why Scotoma never leads with ROC.",
     "attribution": "ULB credit card fraud dataset",
     "key": "roc_vs_pr_illustration",
     "provenance": "independent",
@@ -256,7 +256,7 @@
     "attribution": "this repository",
     "key": "blind_holdout",
     "provenance": "independent",
-    "scope": "PayLoop run 2026-08-31-final",
+    "scope": "Scotoma run 2026-08-31-final",
     "suffix": "",
     "value": "V07 + 10% entity cohort"
   },
@@ -265,7 +265,7 @@
     "attribution": "this repository",
     "key": "coverage_split",
     "provenance": "independent",
-    "scope": "PayLoop injector coverage",
+    "scope": "Scotoma injector coverage",
     "suffix": "",
     "value": "8 modules, 12 classes, 12 of 32 vectors"
   },
@@ -274,7 +274,7 @@
     "attribution": "this repository",
     "key": "registry_status_split",
     "provenance": "independent",
-    "scope": "PayLoop registry status distribution",
+    "scope": "Scotoma registry status distribution",
     "suffix": "",
     "value": "22 / 5 / 5"
   },
@@ -292,7 +292,7 @@
     "attribution": "this repository",
     "key": "ladder_no_autonomous_block",
     "provenance": "independent",
-    "scope": "PayLoop mitigation ladder",
+    "scope": "Scotoma mitigation ladder",
     "suffix": "",
     "value": "0.90"
   }

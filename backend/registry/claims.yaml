@@ -195,7 +195,7 @@
   scope: "ULB credit card dataset, ROC-AUC against PR-AUC"
   provenance: independent
   attribution: "ULB credit card fraud dataset"
-  approved_text: "On the ULB dataset the same model scores 0.957 ROC-AUC and 0.708 PR-AUC, which is why PayLoop never leads with ROC."
+  approved_text: "On the ULB dataset the same model scores 0.957 ROC-AUC and 0.708 PR-AUC, which is why Scotoma never leads with ROC."
   suffix: ""
 
 - key: hyperloglog_cost
@@ -224,7 +224,7 @@
 
 - key: blind_holdout
   value: "V07 + 10% entity cohort"
-  scope: "PayLoop run 2026-08-31-final"
+  scope: "Scotoma run 2026-08-31-final"
   provenance: independent
   attribution: "this repository"
   approved_text: "One attack family and one entity cohort, neither of which enters any training pool."
@@ -232,7 +232,7 @@
 
 - key: coverage_split
   value: "8 modules, 12 classes, 12 of 32 vectors"
-  scope: "PayLoop injector coverage"
+  scope: "Scotoma injector coverage"
   provenance: independent
   attribution: "this repository"
   approved_text: "Eight injector modules, twelve injector classes, covering twelve of thirty-two vectors."
@@ -240,7 +240,7 @@
 
 - key: registry_status_split
   value: "22 / 5 / 5"
-  scope: "PayLoop registry status distribution"
+  scope: "Scotoma registry status distribution"
   provenance: independent
   attribution: "this repository"
   approved_text: "Twenty-two vectors are documented, five emerging, five speculative."
@@ -256,7 +256,7 @@
 
 - key: ladder_no_autonomous_block
   value: "0.90"
-  scope: "PayLoop mitigation ladder"
+  scope: "Scotoma mitigation ladder"
   provenance: independent
   attribution: "this repository"
   approved_text: "No autonomous block occurs below 0.90, and the top band routes to a human analyst queue rather than a silent decline."

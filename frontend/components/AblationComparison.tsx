@@ -21,7 +21,7 @@ export function AblationComparison({ simulator, ablation }: AblationComparisonPr
     <section className="mt-16">
       <div className="grid gap-10 lg:grid-cols-2">
         <div>
-          <h3>PayLoop simulator</h3>
+          <h3>Scotoma simulator</h3>
           <p className="mt-2 text-body" style={{ color: 'var(--slate-gray)' }}>
             Entity-aware process output, gated against a held-out legitimate partition.
           </p>
@@ -48,7 +48,7 @@ export function AblationComparison({ simulator, ablation }: AblationComparisonPr
         ceiling of {ablation.behavioral_max.toFixed(1)}. Its within-entity inter-event-time
         autocorrelation is {metric(ablation, 'behavioral', 'iet_autocorr_batch')} against{' '}
         {metric(ablation, 'behavioral', 'iet_autocorr_reference')} for the reference population.
-        Naming the generator here is accurate: it is PayLoop&apos;s own ablation baseline.
+        Naming the generator here is accurate: it is Scotoma&apos;s own ablation baseline.
       </p>
     </section>
   );
