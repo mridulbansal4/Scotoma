@@ -1,5 +1,6 @@
 """Round orchestration: bootstrap, run_round, finalise."""
 
+import json
 import logging
 import platform
 import subprocess
@@ -7,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import duckdb
 import numpy as np
 import pandas as pd
 
@@ -49,9 +51,10 @@ from runtime.artifacts import (
     write_manifest,
 )
 from runtime.config import PayLoopConfig, load_config
-from runtime.errors import InjectorProducedNothing, RedAgentUnavailable
+from runtime.errors import InjectorProducedNothing, RedAgentUnavailable, WarehouseUnavailable
 from runtime.seeding import rng_for
 from runtime.timewindows import TimeWindow, round_window
+from runtime.warehouse import initialise_schema, open_warehouse, write_frame
 
 LOGGER = logging.getLogger("payloop.loop")
 
@@ -95,6 +98,68 @@ class LoopContext:
     agent_mode: str
     agent_hints: list[str] = field(default_factory=list)
     round_records: list[dict] = field(default_factory=list)
+
+
+def persist(table: str, frame: pd.DataFrame) -> int:
+    """Mirror a frame into the DuckDB supporting tables. The warehouse is a convenience for
+    querying a run afterwards; the artefacts on disk remain the source of truth, so an
+    unavailable warehouse degrades to a warning rather than losing the round."""
+    if frame.empty:
+        return 0
+    try:
+        connection = open_warehouse()
+        initialise_schema(connection)
+        written = write_frame(connection, table, frame)
+        connection.close()
+        return written
+    except (WarehouseUnavailable, duckdb.Error) as exc:
+        LOGGER.warning("warehouse write to %s skipped: %s", table, exc)
+        return 0
+
+
+def campaign_rows(
+    campaigns, round_index: int, active, hardest_ids: set[str], passed: bool
+) -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "campaign_id": str(campaign.campaign_id),
+                "vector_id": campaign.vector_id,
+                "round": round_index,
+                "params": json.dumps(campaign.params, sort_keys=True, default=str),
+                "agent_rationale": campaign.rationale,
+                "n_events": int(len(campaign.events)),
+                "evasion_rate": float((active.evasion or {}).get(str(campaign.campaign_id), 0.0))
+                if active
+                else None,
+                "fidelity_passed": passed,
+                "in_training_pool": str(campaign.campaign_id) in hardest_ids,
+            }
+            for campaign in campaigns
+        ]
+    )
+
+
+def round_metric_row(record: dict) -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "run_id": record["run_id"],
+                "round": record["round"],
+                "status": record["status"],
+                "pr_auc": record["pr_auc"],
+                "pr_auc_blind": record["pr_auc_blind"],
+                "fpr_legit": record["fpr_legit"],
+                "evasion_active": record["evasion_active"],
+                "evasion_blind": record["evasion_blind"],
+                "fidelity_composite": record["fidelity_composite"],
+                "cost_per_100k": record["cost_per_100k"],
+                "coverage_pct": record["coverage_pct"],
+                "threshold": record["threshold"],
+                "latency_p99_ms": record["latency_p99_ms"],
+            }
+        ]
+    )
 
 
 def emit(context: LoopContext, event: str, payload: dict) -> None:
@@ -161,9 +226,10 @@ def bootstrap(config: PayLoopConfig) -> LoopContext:
     entities.to_parquet(DATA_DIR / "entities.parquet", index=False)
     partition.pool_events.to_parquet(DATA_DIR / "events_legit.parquet", index=False)
     partition.blind_events.to_parquet(DATA_DIR / "events_blind.parquet", index=False)
-    edge_table(partition.pool_events.head(REFERENCE_SAMPLE_ROWS)).to_parquet(
-        DATA_DIR / "edges.parquet", index=False
-    )
+    edges = edge_table(partition.pool_events.head(REFERENCE_SAMPLE_ROWS))
+    edges.to_parquet(DATA_DIR / "edges.parquet", index=False)
+    persist("entities", entities)
+    persist("edges", edges)
 
     reference, carrier = _split_reference_and_carrier(partition.pool_events)
     evaluation_legit = _evaluation_window(partition.pool_events)
@@ -454,6 +520,7 @@ def run_round(context: LoopContext, round_index: int) -> dict:
     hardest = sorted(
         campaigns, key=lambda c: active.evasion.get(str(c.campaign_id), 0.0), reverse=True
     )[: context.config.loop_hardest_k]
+    hardest_ids = {str(campaign.campaign_id) for campaign in hardest}
     for campaign in campaigns:
         campaign.events.to_parquet(
             DATA_DIR / "campaigns" / f"round_{round_index}_{campaign.vector_id}.parquet",
@@ -490,6 +557,8 @@ def run_round(context: LoopContext, round_index: int) -> dict:
         proposals_total=len(proposals),
     )
     emit(context, sse.EVENT_ROUND_RESULT, sse.round_result(record))
+    persist("campaigns", campaign_rows(campaigns, round_index, active, hardest_ids, True))
+    persist("round_metrics", round_metric_row(record))
     context.round_records.append(record)
     return record
 

@@ -17,6 +17,11 @@ OFFLINE_TRIALS: int = 40
 OFFLINE_BUDGET_S: float = 45.0
 OFFLINE_PROBE_EVENTS: int = 400
 OFFLINE_RATIONALE: str = "offline evolutionary search"
+BOUNDARY_RATIONALE: str = (
+    "boundary probe: one parameter placed just outside the declared action space, so the "
+    "constraint validator is exercised on every run rather than assumed to work"
+)
+BOUNDARY_OVERSHOOT: float = 1.5
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 LOGGER = logging.getLogger("payloop.offline_search")
@@ -86,7 +91,30 @@ def search_offline(
                 break
 
     candidates.sort(key=lambda item: item[0], reverse=True)
-    return [proposal for _, proposal in candidates[:k]]
+    chosen = [proposal for _, proposal in candidates[:k]]
+    probe = boundary_probe(chosen)
+    return [*chosen, probe] if probe else chosen
+
+
+def boundary_probe(proposals: list[Proposal]) -> Proposal | None:
+    """A deliberately out-of-schema proposal.
+
+    The validator is the most load-bearing safety property in the loop, and a run in which
+    nothing was ever rejected proves nothing about it. This proposal is built to fail, is
+    labelled as such, and never reaches an injector."""
+    if not proposals:
+        return None
+    source = proposals[0]
+    schema = PARAM_SCHEMAS[source.vector_id]
+    params = dict(source.params)
+    for name, spec in schema.get("properties", {}).items():
+        if spec.get("type") in {"number", "integer"} and name in params:
+            ceiling = float(spec["maximum"])
+            params[name] = ceiling * BOUNDARY_OVERSHOOT + 1.0
+            if spec.get("type") == "integer":
+                params[name] = int(params[name])
+            return Proposal(source.vector_id, params, BOUNDARY_RATIONALE)
+    return None
 
 
 def sample_params_from_trial(trial: optuna.trial.FrozenTrial, schema: dict) -> dict:

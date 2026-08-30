@@ -1,6 +1,7 @@
 """Entity factory. Entities are persistent objects with profiles; rows are emitted by
 processes against them and never sampled independently."""
 
+import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
@@ -106,6 +107,24 @@ CURRENCY_BY_COUNTRY: dict[str, str] = {
 CARD_BIN_PREFIXES: tuple[str, ...] = ("41111100", "41111101", "52223000", "52223001")
 
 DOCUMENTATION_IP_BLOCKS: tuple[str, ...] = ("192.0.2", "198.51.100", "203.0.113")
+
+# Written into the entities table's JSON attributes column, which is where anything not
+# promoted to its own column belongs.
+ATTRIBUTE_COLUMNS: tuple[str, ...] = (
+    "mcc",
+    "control_strength",
+    "acquirer_id",
+    "issuer_id",
+    "card_network",
+    "kyc_level",
+    "balance_band",
+    "device_os",
+    "ip_asn",
+    "proxy_flag",
+    "bank_bic",
+    "agent_operator",
+    "protocol",
+)
 
 
 @dataclass
@@ -401,15 +420,21 @@ def _build_devices(config: PayLoopConfig, cardholders: pd.DataFrame) -> pd.DataF
 
 
 def _build_ips(config: PayLoopConfig) -> pd.DataFrame:
+    """The three RFC 5737 documentation /24s hold 762 usable addresses between them.
+
+    That is the whole address space available to a simulator that must never emit a
+    routable IP, so the distinct-IP count is capped there and heavy address sharing becomes
+    a structural property of the population rather than a modelling choice. It is also the
+    realistic shape: consumer traffic arrives through carrier-grade NAT."""
     rng = rng_for("population:ips")
-    count = config.n_ips
-    blocks = rng.choice(DOCUMENTATION_IP_BLOCKS, size=count)
-    hosts = rng.integers(1, 254, size=count)
+    addresses = [f"{block}.{host}" for block in DOCUMENTATION_IP_BLOCKS for host in range(1, 255)]
+    count = min(config.n_ips, len(addresses))
+    addresses = addresses[:count]
     countries = _country_draw(count, rng)
     return pd.DataFrame(
         {
-            "entity_id": [f"{b}.{h}" for b, h in zip(blocks, hosts, strict=True)],
-            "ip_asn": [f"AS{int(a)}" for a in rng.integers(1000, 99999, size=count)],
+            "entity_id": addresses,
+            "ip_asn": [f"AS{int(value)}" for value in rng.integers(1000, 99999, size=count)],
             "ip_country": countries,
             "proxy_flag": rng.random(count) < IP_PROXY_RATE,
         }
@@ -513,17 +538,31 @@ def entities_frame(population: Population) -> pd.DataFrame:
         ("account", population.accounts),
         ("agent", population.agents),
     ):
+        present = [key for key in ATTRIBUTE_COLUMNS if key in frame.columns]
+        attributes = (
+            frame[present].astype(str).to_dict(orient="records")
+            if present
+            else [{}] * len(frame)
+        )
+        attributes = [json.dumps(record, sort_keys=True) for record in attributes]
         block = pd.DataFrame(
             {
-                "entity_id": frame["entity_id"],
+                "entity_id": frame["entity_id"].to_numpy(),
                 "entity_type": entity_type,
-                "created_ts": frame["created_ts"]
-                if "created_ts" in frame.columns
-                else pd.Timestamp(SIM_START),
-                "home_country": frame["home_country"] if "home_country" in frame.columns else "IN",
-                "in_blind_cohort": frame["in_blind_cohort"]
-                if "in_blind_cohort" in frame.columns
-                else False,
+                "created_ts": (
+                    frame["created_ts"].to_numpy()
+                    if "created_ts" in frame.columns
+                    else pd.Timestamp(SIM_START)
+                ),
+                "home_country": (
+                    frame["home_country"].to_numpy() if "home_country" in frame.columns else "IN"
+                ),
+                "in_blind_cohort": (
+                    frame["in_blind_cohort"].to_numpy()
+                    if "in_blind_cohort" in frame.columns
+                    else False
+                ),
+                "attributes": attributes,
             }
         )
         parts.append(block)
