@@ -129,7 +129,13 @@ Run artefacts under `runs/<run_id>/` are the only source of results. No artefact
    and the simulator will not emit a routable address, so heavy address sharing is a structural
    property of the population rather than a modelling choice. It is also the realistic shape:
    consumer traffic arrives through carrier-grade NAT.
-11. Layers 1 and 2 of the fidelity gate read the legitimate portion of a batch. A campaign is meant
+11. `POST /detect/score` returns one channel score, not three. Channel A is the only channel
+   permitted inline: a multi-hop graph fetch cannot meet an authorisation sub-budget, and the
+   isolation forest is an offline channel. Its reason codes carry no SHAP value either, because
+   per-event attribution needs the training background sample and the frozen artefact set
+   deliberately does not carry it. The SOC alert queue does carry real interventional TreeSHAP,
+   computed against the training data at run time.
+12. Layers 1 and 2 of the fidelity gate read the legitimate portion of a batch. A campaign is meant
    to depart from the legitimate amount and response-code distributions, and that departure is the
    detection signal rather than a fidelity defect; layers 3 to 6 read the whole batch.
 
