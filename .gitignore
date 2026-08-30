@@ -10,3 +10,4 @@ __pycache__/
 frontend/.next/
 frontend/node_modules/
 .claude/
+.serena/
