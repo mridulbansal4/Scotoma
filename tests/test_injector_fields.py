@@ -13,11 +13,11 @@ with the reason. Anything else constant or absent is a defect.
 import numpy as np
 import pytest
 
-from generate.behavior import emit_legitimate, simulation_window
-from generate.injectors import DEFAULT_PARAMS, INJECTORS, RAIL_OF_VECTOR
-from generate.population import SIM_START, build_population
-from runtime.config import PayLoopConfig
-from runtime.seeding import rng_for
+from backend.generate.behavior import emit_legitimate, simulation_window
+from backend.generate.injectors import DEFAULT_PARAMS, INJECTORS, RAIL_OF_VECTOR
+from backend.generate.population import SIM_START, build_population
+from backend.runtime.config import PayLoopConfig
+from backend.runtime.seeding import rng_for
 
 # Identifiers, hashes, amounts and per-event tokens are unique by construction, so a
 # constancy test on them measures nothing.

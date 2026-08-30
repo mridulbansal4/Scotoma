@@ -9,7 +9,7 @@ if [ ! -x "$PYTHON" ]; then
 fi
 
 echo "PayLoop seed_demo: run_id=$RUN_ID"
-"$PYTHON" -c "from runtime.warehouse import initialise_schema, open_warehouse; initialise_schema(open_warehouse())"
-"$PYTHON" -c "from loop.controller import run; print(run())"
+"$PYTHON" -c "from backend.runtime.warehouse import initialise_schema, open_warehouse; initialise_schema(open_warehouse())"
+"$PYTHON" -c "from backend.loop.controller import run; print(run())"
 make web-data RUN_ID="$RUN_ID"
-echo "PayLoop seed_demo complete. Artefacts in runs/$RUN_ID and web/data/run."
+echo "PayLoop seed_demo complete. Artefacts in runs/$RUN_ID and frontend/data/run."

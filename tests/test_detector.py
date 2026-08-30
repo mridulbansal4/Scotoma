@@ -8,20 +8,20 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from defend.cost import THRESHOLD_GRID, CostMatrix, expected_cost, optimal_threshold
-from defend.ensemble import SUSPICIOUS_PR_AUC, Detector, keeps_graph_channel
-from defend.features import cart_hash_mismatch, compute_features
-from defend.gbdt import reliability_curve
-from defend.split import temporal_split
-from defend.windows import rolling_by_key
-from generate.population import SIM_START
-from runtime.errors import FeatureLeakage
-from schema.ces import feature_columns
+from backend.defend.cost import THRESHOLD_GRID, CostMatrix, expected_cost, optimal_threshold
+from backend.defend.ensemble import SUSPICIOUS_PR_AUC, Detector, keeps_graph_channel
+from backend.defend.features import cart_hash_mismatch, compute_features
+from backend.defend.gbdt import reliability_curve
+from backend.defend.split import temporal_split
+from backend.defend.windows import rolling_by_key
+from backend.generate.population import SIM_START
+from backend.runtime.errors import FeatureLeakage
+from backend.schema.ces import feature_columns
 from tests import campaign_for, fixture_world
 
-BENCH_PATH: Path = Path(__file__).resolve().parent.parent / "defend" / "bench.py"
+BENCH_PATH: Path = Path(__file__).resolve().parent.parent / "backend" / "defend" / "bench.py"
 PERMITTED_HOT_PATH_IMPORTS: frozenset[str] = frozenset(
-    {"onnxruntime", "redis", "hmac", "hashlib", "numpy", "time", "runtime.config"}
+    {"onnxruntime", "redis", "hmac", "hashlib", "numpy", "time", "backend.runtime.config"}
 )
 GNN_LIFT_BELOW: float = 0.029
 GNN_LIFT_ABOVE: float = 0.031

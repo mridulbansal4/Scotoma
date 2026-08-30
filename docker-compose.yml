@@ -16,8 +16,8 @@ services:
 
   web:
     image: node:20.11.1-slim
-    working_dir: /web
+    working_dir: /frontend
     volumes:
-      - ./web:/web
+      - ./frontend:/frontend
     command: sh -c "npm install && npm run build && npm start -- --port 3000"
     ports: ["${WEB_PORT:-3000}:3000"]

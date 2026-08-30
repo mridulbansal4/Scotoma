@@ -5,10 +5,10 @@ import pandas as pd
 import powerlaw
 from scipy.stats import kurtosis
 
-from fidelity.behavioral import lag1_iet_autocorrelation
-from fidelity.marginal import BENFORD_CHI2_MAX, BENFORD_EXPECTED, benford_statistics, first_digits
-from generate.declines import mix_for
-from runtime.seeding import rng_for
+from backend.fidelity.behavioral import lag1_iet_autocorrelation
+from backend.fidelity.marginal import BENFORD_CHI2_MAX, BENFORD_EXPECTED, benford_statistics, first_digits
+from backend.generate.declines import mix_for
+from backend.runtime.seeding import rng_for
 from tests import fixture_world
 
 NIGRINI_ACCEPTABLE_MAD: float = 0.012

@@ -4,13 +4,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from fidelity.ablation import run_ablation
-from fidelity.behavioral import STRUCTURAL_FAILURE_MULTIPLE
-from fidelity.gate import ROTATED_LAYERS, run_gate
-from fidelity.privacy import INSUFFICIENT_DATA
-from fidelity.privacy import evaluate as privacy_evaluate
-from loop.controller import _carrier_entities, _split_reference_and_carrier
-from runtime.seeding import rng_for
+from backend.fidelity.ablation import run_ablation
+from backend.fidelity.behavioral import STRUCTURAL_FAILURE_MULTIPLE
+from backend.fidelity.gate import ROTATED_LAYERS, run_gate
+from backend.fidelity.privacy import INSUFFICIENT_DATA
+from backend.fidelity.privacy import evaluate as privacy_evaluate
+from backend.loop.controller import _carrier_entities, _split_reference_and_carrier
+from backend.runtime.seeding import rng_for
 from tests import fixture_world
 
 CARRIER_MULTIPLIER: float = 24.0
@@ -132,7 +132,7 @@ def test_structural_collapse_sets_the_composite() -> None:
     for column in ("pan_token", "device_id", "merchant_id"):
         values = shuffled[column].to_numpy()
         shuffled[column] = values[rng.permutation(values.size)]
-    from fidelity.behavioral import evaluate as behavioral_evaluate
+    from backend.fidelity.behavioral import evaluate as behavioral_evaluate
 
     layer = behavioral_evaluate(shuffled, reference, world.config)
     assert layer.passed is False

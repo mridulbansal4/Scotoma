@@ -1,0 +1,59 @@
+{
+  "collapse": {
+    "V02": false,
+    "V06": false,
+    "V19": false,
+    "V21": false,
+    "V22": false,
+    "V31": false
+  },
+  "matrix": {
+    "V02": {
+      "ACQUIRER": 0.0823,
+      "ISSUER": 0.0002,
+      "NETWORK": 0.1447
+    },
+    "V06": {
+      "NETWORK": 0.7356
+    },
+    "V19": {
+      "NETWORK": 0.0057
+    },
+    "V21": {
+      "NETWORK": 0.0744
+    },
+    "V22": {
+      "ACQUIRER": 0.0231,
+      "ISSUER": 0.0053,
+      "NETWORK": 0.019
+    },
+    "V31": {
+      "ACQUIRER": 0.005,
+      "ISSUER": 0.0056,
+      "NETWORK": 0.0283
+    }
+  },
+  "status": {
+    "ACQUIRER": {
+      "evaluation_rows": 27649,
+      "party_id": "ACQ_014",
+      "positives": 827,
+      "rows": 161520,
+      "status": "fitted"
+    },
+    "ISSUER": {
+      "evaluation_rows": 33405,
+      "party_id": "ISS_007",
+      "positives": 550,
+      "rows": 195762,
+      "status": "fitted"
+    },
+    "NETWORK": {
+      "evaluation_rows": 305537,
+      "party_id": null,
+      "positives": 7464,
+      "rows": 1805626,
+      "status": "fitted"
+    }
+  }
+}

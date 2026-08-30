@@ -9,14 +9,14 @@ from functools import lru_cache
 
 import pandas as pd
 
-from generate.behavior import emit_legitimate, simulation_window
-from generate.holdout import partition_blind_cohort
-from generate.injectors import DEFAULT_PARAMS, INJECTORS
-from generate.population import SIM_START, Population, build_population
-from generate.prevalence import enforce_caps
-from runtime.config import PayLoopConfig
-from runtime.seeding import rng_for
-from runtime.timewindows import TimeWindow
+from backend.generate.behavior import emit_legitimate, simulation_window
+from backend.generate.holdout import partition_blind_cohort
+from backend.generate.injectors import DEFAULT_PARAMS, INJECTORS
+from backend.generate.population import SIM_START, Population, build_population
+from backend.generate.prevalence import enforce_caps
+from backend.runtime.config import PayLoopConfig
+from backend.runtime.seeding import rng_for
+from backend.runtime.timewindows import TimeWindow
 
 FIXTURE_CARDHOLDERS: int = 3_000
 FIXTURE_MERCHANTS: int = 400
@@ -50,7 +50,7 @@ def fixture_config() -> PayLoopConfig:
 
 @lru_cache(maxsize=1)
 def fixture_world() -> World:
-    from loop.controller import budgeted_campaign
+    from backend.loop.controller import budgeted_campaign
 
     config = fixture_config()
     population = build_population(config)

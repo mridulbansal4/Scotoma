@@ -6,35 +6,35 @@ from pathlib import Path
 
 import pytest
 
-from defend.features import FEATURE_NAMES
-from defend.ladder import LADDER_APPROVE_MAX, LADDER_HOLD_MAX, LADDER_STEPUP_MAX
-from generate.declines import DE39_MIX
-from generate.injectors import INJECTOR_CLASS_COUNT, INJECTOR_MODULE_COUNT, INJECTORS
-from generate.injectors.base import TEST_BIN_RANGES, synth_pan
-from registry.loader import (
+from backend.defend.features import FEATURE_NAMES
+from backend.defend.ladder import LADDER_APPROVE_MAX, LADDER_HOLD_MAX, LADDER_STEPUP_MAX
+from backend.generate.declines import DE39_MIX
+from backend.generate.injectors import INJECTOR_CLASS_COUNT, INJECTOR_MODULE_COUNT, INJECTORS
+from backend.generate.injectors.base import TEST_BIN_RANGES, synth_pan
+from backend.registry.loader import (
     EXPECTED_VECTOR_COUNT,
     load_claims,
     load_vectors,
     mechanism_imperatives,
     resolve_injector,
 )
-from runtime.seeding import rng_for
-from schema.ces import CanonicalEvent, validate_frame
-from schema.mappings.iso8583 import CES_TO_DE
+from backend.runtime.seeding import rng_for
+from backend.schema.ces import CanonicalEvent, validate_frame
+from backend.schema.mappings.iso8583 import CES_TO_DE
 
 REPO_ROOT: Path = Path(__file__).resolve().parent.parent
 PACKAGE_DIRS: tuple[str, ...] = (
-    "api",
-    "defend",
-    "fidelity",
-    "generate",
-    "loop",
-    "registry",
-    "runtime",
-    "schema",
+    "backend/api",
+    "backend/defend",
+    "backend/fidelity",
+    "backend/generate",
+    "backend/loop",
+    "backend/registry",
+    "backend/runtime",
+    "backend/schema",
 )
-CONFIG_MODULE: str = "runtime/config.py"
-SEEDING_MODULE: str = "runtime/seeding.py"
+CONFIG_MODULE: str = "backend/runtime/config.py"
+SEEDING_MODULE: str = "backend/runtime/seeding.py"
 GLOBAL_RANDOM_PATTERN = re.compile(
     r"(?<![\w.])(np\.random\.(?!Generator|SeedSequence|default_rng)|random\.)"
 )

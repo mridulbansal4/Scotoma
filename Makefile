@@ -2,7 +2,7 @@
 # cannot be pinned when the file is parsed.
 PY = $(shell if [ -x .venv/Scripts/python.exe ]; then echo .venv/Scripts/python.exe; else echo .venv/bin/python; fi)
 RUN_ID ?= 2026-08-31-final
-WEB_DATA := web/data/run
+WEB_DATA := frontend/data/run
 SHELL := /bin/bash
 
 .PHONY: setup generate inject fidelity defend scopes bench loop web-data web test report demo clean
@@ -11,43 +11,43 @@ setup:
 	python -m venv .venv
 	$(PY) -m pip install --upgrade pip
 	$(PY) -m pip install -r requirements.txt
-	$(PY) -c "from runtime.warehouse import initialise_schema, open_warehouse; initialise_schema(open_warehouse())"
+	$(PY) -c "from backend.runtime.warehouse import initialise_schema, open_warehouse; initialise_schema(open_warehouse())"
 
 generate:
-	$(PY) -c "from loop.controller import stage; print(stage('generate'))"
+	$(PY) -c "from backend.loop.controller import stage; print(stage('generate'))"
 
 inject:
-	$(PY) -c "from generate.injectors import INJECTORS; from loop.controller import simulate_batch; print(simulate_batch({'vectors': list(INJECTORS), 'days': 180, 'intensity': 1.0}))"
+	$(PY) -c "from backend.generate.injectors import INJECTORS; from backend.loop.controller import simulate_batch; print(simulate_batch({'vectors': list(INJECTORS), 'days': 180, 'intensity': 1.0}))"
 
 fidelity:
-	$(PY) -c "from loop.controller import stage; print(stage('fidelity'))"
+	$(PY) -c "from backend.loop.controller import stage; print(stage('fidelity'))"
 
 defend:
-	$(PY) -c "from loop.controller import stage; print(stage('defend'))"
+	$(PY) -c "from backend.loop.controller import stage; print(stage('defend'))"
 
 scopes:
-	$(PY) -c "from loop.controller import stage; print(stage('scopes'))"
+	$(PY) -c "from backend.loop.controller import stage; print(stage('scopes'))"
 
 bench:
-	$(PY) -c "from loop.controller import stage; print(stage('bench'))"
+	$(PY) -c "from backend.loop.controller import stage; print(stage('bench'))"
 
 loop:
-	$(PY) -c "from loop.controller import run; print(run())"
+	$(PY) -c "from backend.loop.controller import run; print(run())"
 
 web-data:
 	mkdir -p $(WEB_DATA)
 	cp runs/$(RUN_ID)/* $(WEB_DATA)/
-	$(PY) -c "import json, yaml, pathlib; p = pathlib.Path('$(WEB_DATA)/vectors.json'); p.write_text(json.dumps(yaml.safe_load(open('registry/vectors.yaml', encoding='utf-8')), indent=2, sort_keys=True), encoding='utf-8')"
-	$(PY) -c "import json, yaml, pathlib; p = pathlib.Path('$(WEB_DATA)/claims.json'); p.write_text(json.dumps(yaml.safe_load(open('registry/claims.yaml', encoding='utf-8')), indent=2, sort_keys=True), encoding='utf-8')"
+	$(PY) -c "import json, yaml, pathlib; p = pathlib.Path('$(WEB_DATA)/vectors.json'); p.write_text(json.dumps(yaml.safe_load(open('backend/registry/vectors.yaml', encoding='utf-8')), indent=2, sort_keys=True), encoding='utf-8')"
+	$(PY) -c "import json, yaml, pathlib; p = pathlib.Path('$(WEB_DATA)/claims.json'); p.write_text(json.dumps(yaml.safe_load(open('backend/registry/claims.yaml', encoding='utf-8')), indent=2, sort_keys=True), encoding='utf-8')"
 
 web:
-	cd web && npm install && npm run build && npm start
+	cd frontend && npm install && npm run build && npm start
 
 test:
 	$(PY) -m pytest -q
 
 report:
-	$(PY) -c "from loop.controller import stage; print(stage('report'))"
+	$(PY) -c "from backend.loop.controller import stage; print(stage('report'))"
 
 demo: setup loop web-data web
 

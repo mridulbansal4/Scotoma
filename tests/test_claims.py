@@ -5,12 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from registry.loader import load_claims
-from runtime.artifacts import run_dir
-from runtime.config import load_config
+from backend.registry.loader import load_claims
+from backend.runtime.artifacts import run_dir
+from backend.runtime.config import load_config
 
 REPO_ROOT: Path = Path(__file__).resolve().parent.parent
-WEB_ROOT: Path = REPO_ROOT / "web"
+WEB_ROOT: Path = REPO_ROOT / "frontend"
 README_PATH: Path = REPO_ROOT / "README.md"
 RUN_ID: str = load_config().run_id
 

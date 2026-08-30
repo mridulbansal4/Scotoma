@@ -3,10 +3,10 @@
 import pandas as pd
 import pytest
 
-from defend.ensemble import Detector
-from generate.holdout import assert_disjoint, cohort_entity_ids, cohort_mask
-from generate.population import SIM_START
-from runtime.errors import BlindHoldoutLeak
+from backend.defend.ensemble import Detector
+from backend.generate.holdout import assert_disjoint, cohort_entity_ids, cohort_mask
+from backend.generate.population import SIM_START
+from backend.runtime.errors import BlindHoldoutLeak
 from tests import campaign_for, fixture_world
 
 

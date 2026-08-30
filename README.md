@@ -20,7 +20,7 @@ authorisation path.
 | Loop controller with a blind holdout and a co-reported fidelity composite | `loop/`, `runs/<run_id>/rounds.jsonl`, screen `/loop` |
 | Party-Scope Projection matrix | `runs/<run_id>/scope_matrix.json`, screen `/loop` |
 | FastAPI service, 7 endpoints plus an SSE stream | `api/` |
-| Five-screen frontend that makes zero network calls | `web/` |
+| Five-screen frontend that makes zero network calls | `frontend/` |
 
 ## Built vs narrative
 
@@ -71,7 +71,7 @@ Enforced by `tests/test_claims.py::test_no_unbadged_latency`.
 ```bash
 make setup       # venv, pinned dependencies, DuckDB schema
 make loop        # population, campaigns, gate, detector, six rounds, artefacts
-make web-data    # copy runs/<run_id> into web/data/run and render the registry to JSON
+make web-data    # copy runs/<run_id> into frontend/data/run and render the registry to JSON
 make web         # npm install && next build && next start
 make test        # pytest across the whole suite
 make demo        # setup -> loop -> web-data -> web, end to end from a clean clone
@@ -207,7 +207,7 @@ fidelity/   six gate layers, the rotation rule, and the GaussianCopula ablation
 defend/     features, temporal split, three channels, cost matrix, ladder, SHAP, scopes, benchmark
 loop/       round orchestration and telemetry
 api/        seven endpoints, the SSE stream, and the single error envelope
-web/        five screens, reading committed artefacts, making no network calls
+frontend/   five screens, reading committed artefacts, making no network calls
 runs/       committed run artefacts
 ```
 

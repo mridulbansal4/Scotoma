@@ -2,9 +2,9 @@
 
 import pandas as pd
 
-from defend.features import compute_features
-from defend.scopes import SCOPES, party_id_for
-from schema.projections import SCOPE_NULLED_COLUMNS, masked_columns, project_event, project_frame
+from backend.defend.features import compute_features
+from backend.defend.scopes import SCOPES, party_id_for
+from backend.schema.projections import SCOPE_NULLED_COLUMNS, masked_columns, project_event, project_frame
 from tests import fixture_world
 
 

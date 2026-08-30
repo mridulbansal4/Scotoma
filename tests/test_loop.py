@@ -5,15 +5,15 @@ from pathlib import Path
 
 import pytest
 
-from api.events import EVENT_TYPES
-from loop.metrics import (
+from backend.api.events import EVENT_TYPES
+from backend.loop.metrics import (
     STATUS_COMPLETED,
     STATUS_FIDELITY_REJECTED,
     STATUS_MODEL_REGRESSION,
     STATUS_NO_VALID_PROPOSALS,
 )
-from runtime.artifacts import read_json, read_jsonl, run_dir
-from runtime.config import load_config
+from backend.runtime.artifacts import read_json, read_jsonl, run_dir
+from backend.runtime.config import load_config
 
 MIN_ROUNDS: int = 5
 VALID_STATUSES: frozenset[str] = frozenset(
@@ -119,7 +119,7 @@ def test_manifest_records_provenance() -> None:
 
 def test_no_valid_proposals_does_not_crash() -> None:
     """Forcing every proposal invalid yields NO_VALID_PROPOSALS rather than an exception."""
-    from generate.red_agent.constraints import Proposal, partition_valid
+    from backend.generate.red_agent.constraints import Proposal, partition_valid
 
     proposals = [
         Proposal("V01", {"probes_per_min": -1.0}, "invalid"),
