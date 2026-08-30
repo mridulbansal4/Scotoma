@@ -10,7 +10,7 @@
     "merchant_margin": 0.22,
     "p_attrition": 0.32
   },
-  "git_sha": "b247dc19f5eadb654b989d7b29e5ea7ab9bc96f6",
+  "git_sha": "a8ed6572de7545b84a85fd71c20c39cf1f163859",
   "gnn_enabled": true,
   "gnn_min_lift_prauc": 0.03,
   "host": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel, Python 3.11.9",
@@ -24,5 +24,5 @@
   "population_seed": 42,
   "run_id": "2026-08-31-final",
   "sim_days": 180,
-  "started_ts": "2026-08-30T14:07:26.371828+00:00"
+  "started_ts": "2026-08-30T14:08:13.562264+00:00"
 }

@@ -142,11 +142,18 @@ def test_web_has_no_fetch() -> None:
 
 @web_present
 def test_ui_numbers_are_claimed() -> None:
-    """Every externally quotable figure in the copy resolves to a claims.yaml key."""
+    """Every externally quotable figure in the copy resolves to a claims.yaml key.
+
+    Both the components and the page copy are scanned: a headline is as quotable as a chart
+    label, and it is the headline a judge reads first."""
     claims = load_claims()
     approved = " ".join(f"{c.value} {c.approved_text}" for c in claims.values())
     offenders = []
-    for path in (WEB_ROOT / "components").rglob("*.tsx"):
+    scanned = [
+        *(WEB_ROOT / "components").rglob("*.tsx"),
+        *(WEB_ROOT / "app").rglob("*.tsx"),
+    ]
+    for path in scanned:
         for match in NUMBER_PATTERN.finditer(_read(path)):
             token = match.group(0).strip()
             if token not in approved:
