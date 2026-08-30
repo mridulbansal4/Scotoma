@@ -119,7 +119,17 @@ Run artefacts under `runs/<run_id>/` are the only source of results. No artefact
 7. The loop measures and shrinks blind spots. It does not claim to make anyone monotonically safer.
 8. The agentic rail is deliberately over-sampled relative to real-world volume because it is the
    novelty surface. It is excluded from any population-level prevalence claim.
-9. Layers 1 and 2 of the fidelity gate read the legitimate portion of a batch. A campaign is meant
+9. The committed run simulates 1,200,000 events, not the 2,000,000 the design targets. The
+   population is the full specified one — 50,000 cardholders, 4,000 merchants, 65,000 devices,
+   50,000 accounts, 800 agents — but the event frame costs about 836 bytes per row and the
+   machine that produced this run had 3.3 GB of free memory. `TARGET_EVENTS` is a configuration
+   value: re-run with `TARGET_EVENTS=2000000` on a machine with more headroom and every artefact
+   regenerates at the design volume.
+10. Distinct IP addresses are capped at 762. RFC 5737 reserves exactly three documentation /24s
+   and the simulator will not emit a routable address, so heavy address sharing is a structural
+   property of the population rather than a modelling choice. It is also the realistic shape:
+   consumer traffic arrives through carrier-grade NAT.
+11. Layers 1 and 2 of the fidelity gate read the legitimate portion of a batch. A campaign is meant
    to depart from the legitimate amount and response-code distributions, and that departure is the
    detection signal rather than a fidelity defect; layers 3 to 6 read the whole batch.
 

@@ -1,1 +1,0 @@
-{"data": {"artifacts": ["rounds.jsonl", "scope_matrix.json", "per_vector_recall.json", "coverage.json", "latency.json", "ablation.json", "reason_codes.json", "alerts.jsonl", "distributions.json"], "gnn_enabled": false, "gnn_measured_lift_pr_auc": -0.3226, "rounds_completed": 0, "rounds_rejected": 0, "run_id": "finalise-check"}, "event": "done"}
