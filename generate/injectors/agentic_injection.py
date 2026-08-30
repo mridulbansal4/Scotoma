@@ -72,14 +72,13 @@ class CartInjectionCampaign:
                 index,
                 timestamps[index],
                 payer,
-
                 str(merchant["entity_id"]),
-
                 str(merchant["home_country"]),
                 amount,
                 agent,
                 rng,
                 currency=str(payer["currency"]),
+                population=population,
             )
             injected, intent_hash, settle_hash = self._mutate_cart(
                 row.pop("_line_items"), params, rng

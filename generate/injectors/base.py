@@ -114,6 +114,118 @@ def eci_for(network: str, semantic: str) -> str:
     raise KeyError(f"no eci for {network}/{semantic}")
 
 
+AVS_RESULTS: tuple[tuple[str, float], ...] = (
+    ("Y", 0.72),
+    ("A", 0.08),
+    ("Z", 0.06),
+    ("N", 0.08),
+    ("U", 0.06),
+)
+CVV_RESULTS: tuple[tuple[str, float], ...] = (("M", 0.88), ("N", 0.05), ("P", 0.04), ("U", 0.03))
+THREEDS_FLOWS: tuple[tuple[str, float], ...] = (
+    ("frictionless", 0.82),
+    ("challenge", 0.15),
+    ("none", 0.03),
+)
+SCA_EXEMPT_REASONS: tuple[str, ...] = (
+    "low_value",
+    "tra",
+    "trusted_beneficiary",
+    "recurring",
+    "corporate",
+)
+SCA_EXEMPT_RATE: float = 0.22
+# Fraud is not uniformly approved. A campaign whose every event returns 00 is separable on
+# that alone, which tells the detector nothing about the typology.
+CAMPAIGN_APPROVAL_RATE: float = 0.86
+
+
+def weighted_choice(options: tuple[tuple[str, float], ...], rng: np.random.Generator) -> str:
+    values = [value for value, _ in options]
+    weights = [weight for _, weight in options]
+    return str(rng.choice(values, p=weights))
+
+
+def device_network_fields(
+    population: Population, rng: np.random.Generator, device_id: str | None = None
+) -> dict[str, object]:
+    """The device and network block every rail carries in legitimate traffic.
+
+    Leaving it empty is as strong a label as pinning it to a constant: the detector reads
+    "no device history" and separates the campaign on absence alone."""
+    devices = population.devices
+    if device_id is not None and (devices["entity_id"] == device_id).any():
+        device = devices[devices["entity_id"] == device_id].iloc[0]
+    else:
+        device = devices.iloc[int(rng.integers(0, len(devices)))]
+    address = population.ips.iloc[int(rng.integers(0, len(population.ips)))]
+    return {
+        "device_id": str(device["entity_id"]),
+        "device_os": str(device["device_os"]),
+        "device_first_seen_ts": device["created_ts"],
+        "ip": str(address["entity_id"]),
+        "ip_asn": str(address["ip_asn"]),
+        "ip_country": str(address["ip_country"]),
+        "ip_proxy_flag": bool(address["proxy_flag"]),
+        "user_agent_hash": hex_token(rng, 64),
+    }
+
+
+def holder_device_fields(
+    population: Population, holder: pd.Series, rng: np.random.Generator
+) -> dict[str, object]:
+    """The device and network block for a holder transacting on their own hardware.
+
+    Read from the population rather than pinned, so a campaign that rides a compromised
+    account is indistinguishable from that account's ordinary traffic on identity alone."""
+    position = population.device_position(str(holder["primary_device_id"]))
+    if position is None:
+        return device_network_fields(population, rng)
+    device = population.devices.iloc[position]
+    address = population.ips.iloc[int(holder["home_ip_index"])]
+    return {
+        "device_id": str(device["entity_id"]),
+        "device_os": str(device["device_os"]),
+        "device_first_seen_ts": device["created_ts"],
+        "ip": str(address["entity_id"]),
+        "ip_asn": str(address["ip_asn"]),
+        "ip_country": str(address["ip_country"]),
+        "ip_proxy_flag": bool(address["proxy_flag"]),
+        "user_agent_hash": str(holder["user_agent_hash"]),
+    }
+
+
+def card_auth_fields(network: str, rng: np.random.Generator) -> dict[str, object]:
+    """Authentication and address-verification results drawn as legitimate traffic draws them."""
+    flow = weighted_choice(THREEDS_FLOWS, rng)
+    semantic = (
+        "not_authenticated"
+        if flow == "none"
+        else ("authenticated" if rng.random() < 0.72 else "attempted")
+    )
+    exempt = rng.random() < SCA_EXEMPT_RATE
+    return {
+        "avs_result": weighted_choice(AVS_RESULTS, rng),
+        "cvv_result": weighted_choice(CVV_RESULTS, rng),
+        "threeds_version": "2.2.0",
+        "threeds_flow": flow,
+        "card_network": network,
+        "eci": eci_for(network, semantic),
+        "eci_semantic": semantic,
+        "cavv_present": semantic != "not_authenticated",
+        "threeds_method_completed": bool(rng.random() < 0.78),
+        "sca_exempt_reason": str(rng.choice(SCA_EXEMPT_REASONS)) if exempt else None,
+        **browser_profile(rng),
+    }
+
+
+def campaign_response_code(rng: np.random.Generator, region: str, approval: float) -> str:
+    """A campaign event is approved or declined like any other, from the same DE39 mix."""
+    from generate.declines import sample_decline_code
+
+    return "00" if rng.random() < approval else sample_decline_code(region, rng)
+
+
 def blank_rows(count: int) -> dict[str, list]:
     return {column: [None] * count for column in CES_COLUMNS}
 
@@ -193,7 +305,10 @@ def spread_timestamps(window: TimeWindow, count: int, rng: np.random.Generator) 
 
 
 def cadence_timestamps(
-    window: TimeWindow, per_minute: float, dwell_seconds: float, limit: int,
+    window: TimeWindow,
+    per_minute: float,
+    dwell_seconds: float,
+    limit: int,
     rng: np.random.Generator,
 ) -> pd.DatetimeIndex:
     step = 60.0 / max(per_minute, 1e-6) + max(dwell_seconds, 0.0)
@@ -201,7 +316,7 @@ def cadence_timestamps(
     count = min(int(span // step) + 1, limit)
     # A perfectly regular cadence is the one thing a rate limiter catches immediately, so
     # the gaps are drawn heavy-tailed around the requested rate instead.
-    gaps = step * np.exp(rng.normal(-CADENCE_SIGMA**2 / 2.0, CADENCE_SIGMA, size=count))
+    gaps = step * np.exp(rng.normal(-(CADENCE_SIGMA**2) / 2.0, CADENCE_SIGMA, size=count))
     offsets = np.clip(np.cumsum(gaps), 0.0, span)
     return pd.Timestamp(window.start) + pd.to_timedelta(offsets, unit="s")
 
@@ -225,6 +340,7 @@ def agentic_row(
     agent: pd.Series,
     rng: np.random.Generator,
     currency: str = AGENTIC_CURRENCY,
+    population: "Population | None" = None,
 ) -> dict:
     """A settled agent-initiated payment with every mandate field populated and valid.
     Each agentic injector then breaks exactly one of them, which is what makes the
@@ -247,10 +363,13 @@ def agentic_row(
         "cross_border": payer_country != payee_country,
         "payer_kyc_level": str(payer["kyc_level"]),
         "payer_balance_band": str(payer["balance_band"]),
-        "response_code": "00",
+        "response_code": campaign_response_code(rng, "GLOBAL", CAMPAIGN_APPROVAL_RATE),
         "agent_id": str(agent["entity_id"]),
         "agent_operator": str(agent["agent_operator"]),
-        "protocol": str(agent["protocol"]) if str(agent["protocol"]) == "AP2" else "AP2",
+        # The agent's own protocol, not a pinned one. Rewriting every campaign event to AP2
+        # separates the vector on the protocol column instead of on the mandate defect that
+        # actually defines it.
+        "protocol": str(agent["protocol"]),
         "agent_attestation_valid": True,
         "intent_mandate_id": str(seeded_uuid(f"{event_key}:intent", index)),
         "cart_mandate_id": str(seeded_uuid(f"{event_key}:cart", index)),
@@ -265,5 +384,6 @@ def agentic_row(
         "cart_hash_at_settle": digest,
         "payee_at_intent": payee_id,
         "payee_at_settle": payee_id,
+        **(device_network_fields(population, rng) if population is not None else {}),
         "_line_items": line_items,
     }

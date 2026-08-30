@@ -3,9 +3,13 @@
 import numpy as np
 import pandas as pd
 
+from generate.declines import sample_decline_code
 from generate.injectors.base import (
+    CAMPAIGN_APPROVAL_RATE,
     Campaign,
+    campaign_response_code,
     campaign_subgraph,
+    device_network_fields,
     finalise,
     hex_token,
     log_uniform,
@@ -48,6 +52,7 @@ def _transfer_row(
     payee_name_match: bool | None = None,
     kyc_level: str = "FULL",
     balance_band: str = "MID",
+    population: Population | None = None,
 ) -> dict:
     row = {
         "event_id": str(seeded_uuid(event_key, index)),
@@ -63,8 +68,14 @@ def _transfer_row(
         "cross_border": payer_country != payee_country,
         "payer_kyc_level": kyc_level,
         "payer_balance_band": balance_band,
-        "response_code": "00",
+        "response_code": campaign_response_code(
+            rng, "INDIA" if rail == "UPI" else "GLOBAL", CAMPAIGN_APPROVAL_RATE
+        ),
     }
+    if population is not None:
+        # Every legitimate row on these rails carries a device and network block. Omitting
+        # it labels the campaign by absence, which separates it on nothing to do with mules.
+        row.update(device_network_fields(population, rng))
     if rail == "UPI":
         row.update(
             {
@@ -77,16 +88,55 @@ def _transfer_row(
             }
         )
     else:
+        banks = (
+            population.accounts["bank_bic"].to_numpy()
+            if population is not None
+            else np.array(["PAYLDE01XXX", "PAYLNL02XXX"])
+        )
+        debtor_bic = str(banks[int(rng.integers(0, len(banks)))])
+        creditor_bic = str(banks[int(rng.integers(0, len(banks)))])
         row.update(
             {
                 "uetr": str(seeded_uuid(f"{event_key}:uetr", index)),
-                "debtor_agent_bic": "PAYLDE01XXX",
-                "creditor_agent_bic": "PAYLNL02XXX",
+                "debtor_agent_bic": debtor_bic,
+                "creditor_agent_bic": creditor_bic,
                 "settlement_ts": timestamp + pd.Timedelta(seconds=10),
                 "remittance_ref": "INVOICE-SETTLEMENT",
             }
         )
     return row
+
+
+def _collectors_and_sources(
+    accounts: pd.DataFrame, hops: int, rng: np.random.Generator
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Split the sampled accounts into collectors and the sources that feed them.
+
+    Collectors are drawn one per jurisdiction before any country is used twice. Layering
+    that crosses borders is the point of the vector, and taking the head of a sample the
+    population skews towards India would instead pin every collector to one country --
+    a constant the detector can separate on without learning anything about layering."""
+    order = list(accounts["home_country"].unique())
+    rng.shuffle(order)
+    chosen: list[int] = []
+    round_index = 0
+    while len(chosen) < hops:
+        added = False
+        for country in order:
+            positions = np.flatnonzero(accounts["home_country"].to_numpy() == country)
+            if round_index < len(positions):
+                chosen.append(int(positions[round_index]))
+                added = True
+                if len(chosen) == hops:
+                    break
+        if not added:
+            break
+        round_index += 1
+    if len(chosen) < hops:
+        chosen = list(range(min(hops, len(accounts))))
+    mask = np.ones(len(accounts), dtype=bool)
+    mask[chosen] = False
+    return accounts.iloc[chosen], accounts.iloc[mask]
 
 
 class AppScamCampaign:
@@ -146,6 +196,7 @@ class AppScamCampaign:
                         payee_name_match=False,
                         kyc_level=str(victim["kyc_level"]),
                         balance_band=str(victim["balance_band"]),
+                        population=population,
                     )
                 )
                 amount *= escalation
@@ -213,8 +264,9 @@ class CollectRequestAbuseCampaign:
                 payee_name_match=not bool(unknown[position]),
                 kyc_level=str(victim["kyc_level"]),
                 balance_band=str(victim["balance_band"]),
+                population=population,
             )
-            row["response_code"] = "00" if approved[position] else "05"
+            row["response_code"] = "00" if approved[position] else sample_decline_code("INDIA", rng)
             rows.append(row)
         events = finalise(rows, self.vector_id, campaign_id, params.get("_lineage", []))
         return Campaign(
@@ -257,7 +309,7 @@ class MuleNetworkCampaign:
         if len(accounts) < fan_in + 2:
             raise InjectorProducedNothing("V28 has too few accounts for the requested fan-in")
 
-        rows = self._layer(accounts, params, window, fan_in, hops, rng, campaign_id)
+        rows = self._layer(accounts, params, window, fan_in, hops, rng, campaign_id, population)
         if not rows:
             raise InjectorProducedNothing("V28 produced no layering legs")
 
@@ -283,6 +335,7 @@ class MuleNetworkCampaign:
         hops: int,
         rng: np.random.Generator,
         campaign_id,
+        population: Population,
     ) -> list[dict]:
         """Fan-in onto a collector, then onward within the dwell window.
 
@@ -290,7 +343,7 @@ class MuleNetworkCampaign:
         sits is not being laundered."""
         dwell = float(params["dwell_minutes"])
         ladder = [float(value) for value in params.get("amount_ladder", DEFAULT_AMOUNT_LADDER)]
-        collectors, sources = accounts.iloc[:hops], accounts.iloc[hops:]
+        collectors, sources = _collectors_and_sources(accounts, hops, rng)
         rows: list[dict] = []
         index = 0
         cursor = pd.Timestamp(window.start)
@@ -318,6 +371,7 @@ class MuleNetworkCampaign:
                             rng,
                             kyc_level=str(source["kyc_level"]),
                             balance_band=str(source["balance_band"]),
+                            population=population,
                         )
                     )
                     index += 1
@@ -341,6 +395,7 @@ class MuleNetworkCampaign:
                             rng,
                             kyc_level=str(collector["kyc_level"]),
                             balance_band=str(collector["balance_band"]),
+                            population=population,
                         )
                     )
                     index += 1

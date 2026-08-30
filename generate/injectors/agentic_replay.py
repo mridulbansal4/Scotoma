@@ -65,14 +65,13 @@ class AgentImpersonationCampaign:
                 index,
                 timestamps[index],
                 payer,
-
                 str(merchant["entity_id"]),
-
                 str(merchant["home_country"]),
                 float(log_uniform(30.0, 900.0, rng)),
                 agent,
                 rng,
                 currency=str(payer["currency"]),
+                population=population,
             )
             row.pop("_line_items")
             row["agent_attestation_valid"] = not bool(invalid[index])
@@ -122,14 +121,13 @@ class MandateReplayCampaign:
                 index,
                 timestamps[index],
                 payer,
-
                 str(merchant["entity_id"]),
-
                 str(merchant["home_country"]),
                 float(log_uniform(25.0, 750.0, rng)),
                 agent,
                 rng,
                 currency=str(payer["currency"]),
+                population=population,
             )
             row.pop("_line_items")
             if reuse[index] and previous_nonce is not None:

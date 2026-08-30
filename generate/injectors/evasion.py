@@ -5,10 +5,13 @@ import pandas as pd
 
 from defend.features import FEATURE_NAMES
 from generate.injectors.base import (
+    CAMPAIGN_APPROVAL_RATE,
     Campaign,
-    browser_profile,
+    campaign_response_code,
     campaign_subgraph,
+    card_auth_fields,
     finalise,
+    holder_device_fields,
     spread_timestamps,
     to_inr_array,
 )
@@ -38,6 +41,7 @@ def _evasion_row(
     merchant: pd.Series,
     amount: float,
     budget: float,
+    population: Population,
     rng: np.random.Generator,
 ) -> dict:
     """A transaction that stays inside every band the holder normally occupies."""
@@ -65,29 +69,15 @@ def _evasion_row(
         "pos_entry_mode": "812",
         "processing_code": "000000",
         "mti": "0100",
-        "response_code": "00",
-        "avs_result": "Y",
-        "cvv_result": "M",
+        "response_code": campaign_response_code(rng, "GLOBAL", CAMPAIGN_APPROVAL_RATE),
         "terminal_id": str(merchant["terminal_id"]),
         "merchant_country": str(merchant["home_country"]),
-        "threeds_version": "2.2.0",
-        "threeds_flow": "frictionless",
-        "card_network": network,
-        "eci": "06" if network == "VISA" else "01",
-        "eci_semantic": "attempted",
-        "cavv_present": True,
-        "threeds_method_completed": True,
+        **card_auth_fields(network, rng),
         "device_fingerprint_id": str(holder["device_fingerprint_id"]),
-        **browser_profile(rng),
-        "sca_exempt_reason": "low_value" if budget < LOW_VALUE_EXEMPTION_BUDGET else None,
-        "device_id": str(holder["primary_device_id"]),
-        "device_os": "ANDROID",
-        "device_first_seen_ts": timestamp,
-        "ip": str(holder["home_ip"]),
-        "ip_asn": "AS55836",
-        "ip_country": str(holder["home_country"]),
-        "ip_proxy_flag": False,
-        "user_agent_hash": str(holder["user_agent_hash"]),
+        # Staying under the low-value exemption ceiling is how the vector avoids a
+        # challenge; above it the campaign claims exemptions no differently from anyone.
+        **({"sca_exempt_reason": "low_value"} if budget < LOW_VALUE_EXEMPTION_BUDGET else {}),
+        **holder_device_fields(population, holder, rng),
     }
 
 
@@ -129,7 +119,15 @@ class ScorerEvasionCampaign:
             )
             rows.append(
                 _evasion_row(
-                    campaign_id, index, timestamps[index], holder, merchant, amount, budget, rng
+                    campaign_id,
+                    index,
+                    timestamps[index],
+                    holder,
+                    merchant,
+                    amount,
+                    budget,
+                    population,
+                    rng,
                 )
             )
 

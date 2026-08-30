@@ -4,14 +4,22 @@ import numpy as np
 import pandas as pd
 
 from generate.injectors.base import (
+    AVS_RESULTS,
+    CAMPAIGN_APPROVAL_RATE,
+    CVV_RESULTS,
+    SCA_EXEMPT_RATE,
+    SCA_EXEMPT_REASONS,
     Campaign,
     amount_in_band,
     browser_profile,
+    campaign_response_code,
     campaign_subgraph,
     finalise,
     hex_token,
+    holder_device_fields,
     spread_timestamps,
     to_inr_array,
+    weighted_choice,
 )
 from generate.population import Population
 from runtime.errors import InjectorProducedNothing
@@ -32,6 +40,7 @@ def _routed_row(
     amount: float,
     acceptance_country: str,
     routed_out: bool,
+    population: Population,
     rng: np.random.Generator,
 ) -> dict:
     """One acceptance. Routing outside the mandatory-SCA region is the whole mechanism:
@@ -62,9 +71,9 @@ def _routed_row(
         "pos_entry_mode": "812",
         "processing_code": "000000",
         "mti": "0100",
-        "response_code": "00",
-        "avs_result": "U",
-        "cvv_result": "M",
+        "response_code": campaign_response_code(rng, "GLOBAL", CAMPAIGN_APPROVAL_RATE),
+        "avs_result": weighted_choice(AVS_RESULTS, rng),
+        "cvv_result": weighted_choice(CVV_RESULTS, rng),
         "terminal_id": str(merchant["terminal_id"]),
         "merchant_country": acceptance_country,
         "threeds_version": None if routed_out else "2.2.0",
@@ -76,15 +85,18 @@ def _routed_row(
         "threeds_method_completed": not routed_out,
         "device_fingerprint_id": f"fp_{hex_token(rng, 16)}",
         **browser_profile(rng),
-        "sca_exempt_reason": "tra" if routed_out else None,
-        "device_id": str(holder["primary_device_id"]),
-        "device_os": "WINDOWS",
-        "device_first_seen_ts": timestamp,
-        "ip": str(holder["home_ip"]),
-        "ip_asn": "AS64512",
-        "ip_country": acceptance_country,
-        "ip_proxy_flag": routed_out,
-        "user_agent_hash": hex_token(rng, 64),
+        # TRA on the routed-out leg is the mechanism. The domestic leg claims exemptions at
+        # the ordinary rate, so the column does not separate the campaign by itself.
+        "sca_exempt_reason": (
+            "tra"
+            if routed_out
+            else (
+                str(rng.choice(list(SCA_EXEMPT_REASONS)))
+                if rng.random() < SCA_EXEMPT_RATE
+                else None
+            )
+        ),
+        **holder_device_fields(population, holder, rng),
     }
 
 
@@ -139,6 +151,7 @@ class CrossBorderScaGapCampaign:
                     float(amounts[index]),
                     acceptance,
                     routed_out,
+                    population,
                     rng,
                 )
             )

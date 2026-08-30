@@ -58,14 +58,13 @@ class MandateScopeBreachCampaign:
                 index,
                 timestamps[index],
                 payer,
-
                 str(merchant["entity_id"]),
-
                 str(merchant["home_country"]),
                 ceiling * overspend,
                 agent,
                 rng,
                 currency=str(payer["currency"]),
+                population=population,
             )
             row.pop("_line_items")
             row["mandate_amount_max"] = round(ceiling, 2)

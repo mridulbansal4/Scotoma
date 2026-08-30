@@ -95,6 +95,28 @@ the UI without adding it to `claims.yaml` fails `tests/test_claims.py`.
 Run artefacts under `runs/<run_id>/` are the only source of results. No artefact is hand-edited:
 `manifest.json` records the seed, the config hash and the git SHA, so an edit is visible.
 
+### What the blind holdout caught
+
+The holdout earned its place during the build. An early run scored the held-out V07 family at
+0.95 PR-AUC — a number that would have looked like generalisation and was in fact a leak. The
+injectors were minting attacker devices in their own namespace, on one operating system, behind
+one country. The detector learned that device shape from the vectors it trained on and recognised
+the holdout for free.
+
+Fixing it moved the blind result to the opposite extreme, and a field-by-field audit against
+legitimate traffic on the same rail found the wider cause: campaigns were pinning columns the
+population varies (authentication flow, AVS and CVV results, response codes, agent protocol,
+correspondent BICs) and omitting the device and network block entirely on the UPI, SEPA and
+agentic rails. Absence separated the campaigns as cleanly as a constant would have.
+
+`tests/test_injector_fields.py` now compares every injector's output against legitimate traffic on
+its rail and fails on any column that is pinned or absent. Constants that *are* the mechanism —
+enumeration walking a single issuer range — are listed with their reason in `MECHANISM_CONSTANTS`
+rather than waived silently.
+
+This is the reason to read the blind number and not the active one. The active PR-AUC was
+comfortably above 0.99 the entire time the leak was present.
+
 ## Limitations, stated first
 
 1. There is no real seed data. Every fidelity claim is validated against PayLoop's own held-out
@@ -135,7 +157,11 @@ Run artefacts under `runs/<run_id>/` are the only source of results. No artefact
    per-event attribution needs the training background sample and the frozen artefact set
    deliberately does not carry it. The SOC alert queue does carry real interventional TreeSHAP,
    computed against the training data at run time.
-12. Layers 1 and 2 of the fidelity gate read the legitimate portion of a batch. A campaign is meant
+12. The field-shape audit compares marginals: it catches a column that is pinned or absent, not
+   one whose *distribution* is merely too convenient. A campaign can still be more separable
+   than the real typology would be without tripping it. The blind holdout, not the audit, is the
+   backstop for that.
+13. Layers 1 and 2 of the fidelity gate read the legitimate portion of a batch. A campaign is meant
    to depart from the legitimate amount and response-code distributions, and that departure is the
    detection signal rather than a fidelity defect; layers 3 to 6 read the whole batch.
 

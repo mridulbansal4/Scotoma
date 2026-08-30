@@ -193,6 +193,15 @@ class Population:
     def account_count(self) -> int:
         return len(self.accounts)
 
+    def device_position(self, device_id: str) -> int | None:
+        """Position of a device in the device frame, cached so per-row lookups stay O(1)."""
+        if getattr(self, "_device_positions", None) is None:
+            self._device_positions = {
+                str(value): position
+                for position, value in enumerate(self.devices["entity_id"].to_numpy())
+            }
+        return self._device_positions.get(str(device_id))
+
     def new_attacker_device(self, rng: np.random.Generator) -> dict[str, str]:
         """A device the attacker controls, drawn from the ordinary population.
 

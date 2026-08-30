@@ -5,6 +5,7 @@ import pandas as pd
 
 from generate.injectors.base import (
     LIVE_PAN_HIT_RATE,
+    SCA_EXEMPT_REASONS,
     Campaign,
     amount_in_band,
     browser_profile,
@@ -26,6 +27,11 @@ from runtime.timewindows import TimeWindow
 PROBE_EVENT_LIMIT: int = 6_000
 BIN_ATTACK_EVENT_LIMIT: int = 8_000
 VALIDATION_AMOUNT_JITTER: float = 2.5
+# Not every acceptance an enumeration campaign reaches is unauthenticated. Some apply 3DS
+# and some claim an exemption, and that mixture is why the signal is a rate rather than
+# a flag.
+PROBE_AUTHENTICATED_SHARE: float = 0.18
+PROBE_EXEMPTION_SHARE: float = 0.14
 # Card testing is distributed: a single device probing thousands of PANs is caught by a
 # velocity rule on the first afternoon, which is why the observed behaviour spreads the
 # work across a fleet and stays under the per-device limits.
@@ -61,6 +67,14 @@ def _probe_rows(
     codes = [code for code, _ in ENUMERATION_DECLINE_MIX]
     weights = [weight for _, weight in ENUMERATION_DECLINE_MIX]
     declines = rng.choice(codes, size=size, p=weights)
+    challenged = rng.random(size) < PROBE_AUTHENTICATED_SHARE
+    flows = np.where(challenged, "frictionless", "none")
+    semantics = np.where(challenged, "attempted", "not_authenticated")
+    exemptions = np.where(
+        rng.random(size) < PROBE_EXEMPTION_SHARE,
+        rng.choice(list(SCA_EXEMPT_REASONS), size=size),
+        None,
+    )
     first_seen = pd.Series(
         devices_frame["created_ts"].to_numpy(), index=devices_frame["entity_id"].to_numpy()
     )
@@ -101,12 +115,17 @@ def _probe_rows(
                 "terminal_id": str(merchants["terminal_id"].to_numpy()[merchant]),
                 "merchant_country": str(merchants["home_country"].to_numpy()[merchant]),
                 "threeds_version": "2.2.0",
-                "threeds_flow": "none",
+                # Probing avoids authentication where it can, but a share of acceptances
+                # apply it regardless, and a share of merchants claim an exemption on the
+                # attacker's behalf. Pinning the whole campaign to one flow would separate
+                # it on the authentication column alone.
+                "threeds_flow": flows[position],
                 "card_network": network,
-                "eci": eci_for(network, "not_authenticated"),
-                "eci_semantic": "not_authenticated",
-                "cavv_present": False,
-                "threeds_method_completed": False,
+                "eci": eci_for(network, semantics[position]),
+                "eci_semantic": semantics[position],
+                "cavv_present": semantics[position] != "not_authenticated",
+                "threeds_method_completed": bool(challenged[position]),
+                "sca_exempt_reason": exemptions[position],
                 "device_fingerprint_id": f"fp_{hex_token(rng, 16)}",
                 **browser_profile(rng),
                 "device_id": device["device_id"],
