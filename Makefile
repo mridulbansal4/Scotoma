@@ -1,10 +1,9 @@
-PY := .venv/Scripts/python.exe
+# Resolved lazily: `make setup` creates the interpreter this variable points at, so it
+# cannot be pinned when the file is parsed.
+PY = $(shell if [ -x .venv/Scripts/python.exe ]; then echo .venv/Scripts/python.exe; else echo .venv/bin/python; fi)
 RUN_ID ?= 2026-08-31-final
 WEB_DATA := web/data/run
-
-ifeq (,$(wildcard $(PY)))
-PY := .venv/bin/python
-endif
+SHELL := /bin/bash
 
 .PHONY: setup generate inject fidelity defend scopes bench loop web-data web test report demo clean
 
