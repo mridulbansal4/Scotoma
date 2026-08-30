@@ -34,6 +34,7 @@ ABLATION_COLUMNS: tuple[str, ...] = (
     "payee_country",
 )
 MISSING_TOKEN: str = "__missing__"
+MARGINAL_SHARE_COLUMNS: tuple[str, ...] = ("rail", "response_code", "currency", "mcc")
 
 
 def _fit_sample(reference: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
@@ -58,9 +59,7 @@ def synthesize(reference: pd.DataFrame) -> pd.DataFrame:
     fit_frame = training[available].copy()
     for column in available:
         if fit_frame[column].dtype == object:
-            fit_frame[column] = (
-                fit_frame[column].astype("object").fillna(MISSING_TOKEN).astype(str)
-            )
+            fit_frame[column] = fit_frame[column].astype("object").fillna(MISSING_TOKEN).astype(str)
 
     metadata = SingleTableMetadata()
     metadata.detect_from_dataframe(fit_frame)
@@ -82,6 +81,41 @@ def synthesize(reference: pd.DataFrame) -> pd.DataFrame:
     return batch.reset_index(drop=True)
 
 
+def marginal_shares(batch: pd.DataFrame, reference: pd.DataFrame) -> dict:
+    """How closely the baseline reproduces each column on its own.
+
+    This is the other half of the argument. A row-independent generator can match every
+    column marginal to within a fraction of a point and still carry none of the structure
+    that links them, so the per-column agreement is reported next to the layers it fails."""
+    shares: dict[str, dict] = {}
+    for column in MARGINAL_SHARE_COLUMNS:
+        if column not in batch.columns or column not in reference.columns:
+            continue
+        left = batch[column].astype("object").fillna(MISSING_TOKEN).value_counts(normalize=True)
+        right = (
+            reference[column].astype("object").fillna(MISSING_TOKEN).value_counts(normalize=True)
+        )
+        aligned = left.reindex(right.index).fillna(0.0)
+        shares[column] = {
+            "max_abs_difference": round(float((aligned - right).abs().max()), 4),
+            "batch_top": {str(k): round(float(v), 4) for k, v in left.head(4).items()},
+            "reference_top": {str(k): round(float(v), 4) for k, v in right.head(4).items()},
+        }
+    shares["decline_rate_by_rail"] = {
+        "batch": _decline_by_rail(batch),
+        "reference": _decline_by_rail(reference),
+    }
+    return shares
+
+
+def _decline_by_rail(frame: pd.DataFrame) -> dict[str, float]:
+    declined = frame["response_code"].astype("object").fillna("00").ne("00")
+    return {
+        str(rail): round(float(value), 4)
+        for rail, value in declined.groupby(frame["rail"]).mean().items()
+    }
+
+
 def run_ablation(
     fit_source: pd.DataFrame, reference: pd.DataFrame, config: PayLoopConfig | None = None
 ) -> tuple[GateResult, dict]:
@@ -92,6 +126,7 @@ def run_ablation(
     result = run_gate(batch, reference, ABLATION_ROUND_INDEX, config)
     payload = {
         "generator": ABLATION_GENERATOR,
+        "marginal_shares": marginal_shares(batch, reference),
         "fit_rows": min(ABLATION_FIT_ROWS, len(fit_source)),
         "sample_rows": len(batch),
         "behavioral_max": config.fidelity_behavioral_max,

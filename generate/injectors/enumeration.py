@@ -21,16 +21,29 @@ from runtime.errors import InjectorProducedNothing
 from runtime.seeding import seeded_uuid
 from runtime.timewindows import TimeWindow
 
-ENUMERATION_DECLINE_CODE: str = "14"
 PROBE_EVENT_LIMIT: int = 6_000
 BIN_ATTACK_EVENT_LIMIT: int = 8_000
 VALIDATION_AMOUNT_JITTER: float = 2.5
+# Card testing is distributed: a single device probing thousands of PANs is caught by a
+# velocity rule on the first afternoon, which is why the observed behaviour spreads the
+# work across a fleet and stays under the per-device limits.
+ATTACKER_DEVICE_POOL: int = 48
+# Not every non-hit returns invalid-card. Issuers answer a probe against a PAN that exists
+# but fails another check with the ordinary decline codes, and that mixture is what makes
+# the signal statistical rather than a lookup.
+ENUMERATION_DECLINE_MIX: tuple[tuple[str, float], ...] = (
+    ("14", 0.62),
+    ("05", 0.18),
+    ("51", 0.11),
+    ("82", 0.06),
+    ("54", 0.03),
+)
 
 
 def _probe_rows(
     timestamps: pd.DatetimeIndex,
     merchants: pd.DataFrame,
-    device: dict[str, str],
+    devices: list[dict[str, str]],
     bin_prefix: str,
     amounts: np.ndarray,
     hits: np.ndarray,
@@ -41,9 +54,14 @@ def _probe_rows(
     size = len(timestamps)
     merchant_pick = rng.integers(0, len(merchants), size=size)
     merchant_ids = merchants["entity_id"].to_numpy()[merchant_pick]
+    device_pick = rng.integers(0, len(devices), size=size)
+    codes = [code for code, _ in ENUMERATION_DECLINE_MIX]
+    weights = [weight for _, weight in ENUMERATION_DECLINE_MIX]
+    declines = rng.choice(codes, size=size, p=weights)
     rows = []
     for position in range(size):
         merchant = merchant_pick[position]
+        device = devices[int(device_pick[position])]
         payer = payers.iloc[position % len(payers)]
         rows.append(
             {
@@ -70,7 +88,7 @@ def _probe_rows(
                 "pos_entry_mode": "812",
                 "processing_code": "000000",
                 "mti": "0100",
-                "response_code": "00" if hits[position] else ENUMERATION_DECLINE_CODE,
+                "response_code": "00" if hits[position] else str(declines[position]),
                 "avs_result": "N",
                 "cvv_result": "M" if hits[position] else "N",
                 "terminal_id": str(merchants["terminal_id"].to_numpy()[merchant]),
@@ -123,7 +141,7 @@ class EnumerationCampaign:
         self, population: Population, params: dict, window: TimeWindow, rng: np.random.Generator
     ) -> Campaign:
         campaign_id = seeded_uuid("V01", int(window.start.timestamp()))
-        device = population.new_attacker_device(rng)
+        devices = [population.new_attacker_device(rng) for _ in range(ATTACKER_DEVICE_POOL)]
         bin_prefix = population.sample_weak_bin(rng)
         merchants = population.sample_merchants(
             params["n_merchants"], weight_by="inverse_control_strength", rng=rng
@@ -141,7 +159,7 @@ class EnumerationCampaign:
         payers = population.sample_cardholders(min(24, population.n_cardholders), rng)
 
         rows = _probe_rows(
-            timestamps, merchants, device, bin_prefix, amounts, hits, pans, payers, rng
+            timestamps, merchants, devices, bin_prefix, amounts, hits, pans, payers, rng
         )
         events = finalise(rows, self.vector_id, campaign_id, params.get("_lineage", []))
         events["amount_inr"] = to_inr_array(
@@ -174,7 +192,7 @@ class BinAttackCampaign:
         self, population: Population, params: dict, window: TimeWindow, rng: np.random.Generator
     ) -> Campaign:
         campaign_id = seeded_uuid("V02", int(window.start.timestamp()))
-        device = population.new_attacker_device(rng)
+        devices = [population.new_attacker_device(rng) for _ in range(ATTACKER_DEVICE_POOL)]
         merchants = population.sample_merchants(24, weight_by="inverse_control_strength", rng=rng)
         payers = population.sample_cardholders(min(12, population.n_cardholders), rng)
         amount = float(params.get("validation_amount", 1.0))
@@ -195,7 +213,7 @@ class BinAttackCampaign:
             hits = rng.random(count) < LIVE_PAN_HIT_RATE
             rows.extend(
                 _probe_rows(
-                    timestamps, merchants, device, bin_prefix, amounts, hits, pans, payers, rng
+                    timestamps, merchants, devices, bin_prefix, amounts, hits, pans, payers, rng
                 )
             )
         if not rows:

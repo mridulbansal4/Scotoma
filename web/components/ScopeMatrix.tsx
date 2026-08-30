@@ -84,6 +84,20 @@ export function ScopeMatrix({ data }: { data: ScopeMatrixData }) {
         </table>
       </div>
 
+      <ul className="mt-6 flex flex-col gap-1">
+        {SCOPES.map((scope) => {
+          const status = data.status?.[scope];
+          if (!status || status.status === 'fitted') return null;
+          return (
+            <li key={scope} className="text-data" style={{ color: 'var(--signal-orange)' }}>
+              {scope} could not fit a detector at all: {status.positives} fraud events across{' '}
+              {status.rows.toLocaleString()} visible rows. That is the asymmetry in its strongest
+              form, not a missing column.
+            </li>
+          );
+        })}
+      </ul>
+
       <p className="mt-6 max-w-3xl text-body">
         Same detector, three visibility masks. We operationalise a known asymmetry; we did not
         discover it.

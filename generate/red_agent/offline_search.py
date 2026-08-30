@@ -6,6 +6,7 @@ import logging
 import time
 
 import optuna
+import pandas as pd
 
 from generate.injectors import INJECTORS, PARAM_SCHEMAS
 from generate.red_agent.constraints import Proposal, validate
@@ -16,6 +17,7 @@ from runtime.timewindows import TimeWindow
 OFFLINE_TRIALS: int = 40
 OFFLINE_BUDGET_S: float = 45.0
 OFFLINE_PROBE_EVENTS: int = 400
+PROBE_CARRIER_MULTIPLIER: int = 8
 OFFLINE_RATIONALE: str = "offline evolutionary search"
 BOUNDARY_RATIONALE: str = (
     "boundary probe: one parameter placed just outside the declared action space, so the "
@@ -59,6 +61,7 @@ def search_offline(
     window: TimeWindow | None = None,
     detector=None,
     round_index: int = 0,
+    carrier=None,
 ) -> list[Proposal]:
     """One study per vector, objective = realised evasion rate on a short probe campaign."""
     config = load_config()
@@ -78,7 +81,9 @@ def search_offline(
             ok, _ = validate(Proposal(vector_id, params, OFFLINE_RATIONALE))
             if not ok:
                 return 0.0
-            return _probe_evasion(vector_id, params, population, window, detector, round_index)
+            return _probe_evasion(
+                vector_id, params, population, window, detector, round_index, carrier
+            )
 
         study.optimize(objective, n_trials=n_trials, catch=(ValueError, KeyError))
         best = sorted(study.trials, key=lambda t: (t.value or 0.0), reverse=True)
@@ -132,9 +137,20 @@ def sample_params_from_trial(trial: optuna.trial.FrozenTrial, schema: dict) -> d
 
 
 def _probe_evasion(
-    vector_id: str, params: dict, population, window: TimeWindow | None, detector, round_index: int
+    vector_id: str,
+    params: dict,
+    population,
+    window: TimeWindow | None,
+    detector,
+    round_index: int,
+    carrier=None,
 ) -> float:
-    """Realise a short campaign, score it, and report the share the detector misses."""
+    """Realise a short campaign, score it in traffic, and report the share the detector misses.
+
+    Scoring the campaign on its own would leave every velocity feature computed against
+    nothing but the campaign itself, so the objective would rank parameter sets on a feature
+    distribution no scored event ever sees. The probe is mixed into legitimate traffic for
+    the same reason the fidelity gate is."""
     if population is None or window is None or detector is None:
         return 0.0
     injector = INJECTORS.get(vector_id)
@@ -149,8 +165,16 @@ def _probe_evasion(
     events = campaign.events.head(OFFLINE_PROBE_EVENTS)
     if events.empty:
         return 0.0
+    scored = events
+    if carrier is not None and not carrier.empty:
+        sample = carrier.head(len(events) * PROBE_CARRIER_MULTIPLIER)
+        scored = pd.concat([sample, events], ignore_index=True).sort_values("event_ts")
+        scored = scored.reset_index(drop=True)
     try:
-        scores = detector.score(events)
+        scores = detector.score(scored)
     except (ValueError, KeyError):
         return 0.0
-    return float((scores < detector.threshold).mean())
+    fraud = scored["is_fraud"].to_numpy(dtype=bool)
+    if not fraud.any():
+        return 0.0
+    return float((scores[fraud] < detector.threshold).mean())

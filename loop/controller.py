@@ -20,7 +20,7 @@ from defend.explain import background_sample, reason_dictionary_payload, shap_va
 from defend.features import FEATURE_NAMES, FeatureContext, compute_features
 from defend.gbdt import platt_coefficients
 from defend.ladder import action_for_band, band_for_score
-from defend.scopes import collapse_flags, evaluate_all_scopes
+from defend.scopes import evaluate_all_scopes
 from defend.split import TRAIN_END_DAY
 from fidelity.ablation import run_ablation
 from fidelity.gate import run_gate
@@ -408,6 +408,7 @@ def propose_or_search(
         window=window,
         detector=context.detector,
         round_index=round_index,
+        carrier=context.carrier,
     )
 
 
@@ -581,14 +582,10 @@ def finalise(context: LoopContext) -> dict:
         ignore_index=True,
     )
 
-    scope_matrix = evaluate_all_scopes(
+    scopes = evaluate_all_scopes(
         context.pool, context.config, context.context, sim_start=context.sim_start
     )
-    write_json(
-        run_id,
-        "scope_matrix.json",
-        {"matrix": scope_matrix, "collapse": collapse_flags(scope_matrix)},
-    )
+    write_json(run_id, "scope_matrix.json", scopes.as_payload())
 
     active = context.detector.evaluate(
         pd.concat([context.evaluation_legit, _pool_campaigns(context)], ignore_index=True)
@@ -847,15 +844,11 @@ def stage(name: str, config: PayLoopConfig | None = None) -> dict:
         write_json(config.run_id, "ablation.json", payload)
         return {"stage": name, "ablation_passed": result.passed, "layers": payload["layers"]}
     if name == "scopes":
-        matrix = evaluate_all_scopes(
+        scopes = evaluate_all_scopes(
             context.pool, config, context.context, sim_start=context.sim_start
         )
-        write_json(
-            config.run_id,
-            "scope_matrix.json",
-            {"matrix": matrix, "collapse": collapse_flags(matrix)},
-        )
-        return {"stage": name, "vectors": len(matrix)}
+        write_json(config.run_id, "scope_matrix.json", scopes.as_payload())
+        return {"stage": name, "vectors": len(scopes.matrix), "status": scopes.status}
     latency = _benchmark(context)
     write_json(config.run_id, "latency.json", latency)
     return {"stage": name, **latency}

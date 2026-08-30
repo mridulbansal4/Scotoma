@@ -1,0 +1,299 @@
+[
+  {
+    "approved_text": "Global card fraud losses reached $33.41 billion in 2024 on $51.92 trillion of volume.",
+    "attribution": "Nilson Report",
+    "key": "global_card_fraud_2024",
+    "provenance": "independent",
+    "scope": "global card fraud losses on $51.92T volume, 2024",
+    "suffix": "",
+    "value": "$33.41B"
+  },
+  {
+    "approved_text": "That is a global card fraud rate of 6.43 basis points.",
+    "attribution": "Nilson Report",
+    "key": "global_card_fraud_rate_2024",
+    "provenance": "independent",
+    "scope": "global card fraud rate, 2024",
+    "suffix": "",
+    "value": "6.43 bps"
+  },
+  {
+    "approved_text": "False declines cost merchants $50.7 billion across four markets in 2022.",
+    "attribution": "Oxford Economics for Checkout.com",
+    "key": "false_declines_four_markets",
+    "provenance": "vendor_commissioned",
+    "scope": "US, UK, FR, DE, 2022",
+    "suffix": "vendor-commissioned",
+    "value": "$50.7B"
+  },
+  {
+    "approved_text": "42 percent of consumers say they would never return to a merchant after a failed payment.",
+    "attribution": "Oxford Economics for Checkout.com",
+    "key": "customers_never_return",
+    "provenance": "vendor_commissioned",
+    "scope": "consumers after a failed payment",
+    "suffix": "vendor-commissioned",
+    "value": "42%"
+  },
+  {
+    "approved_text": "UK authorised push payment losses were 450.7 million pounds in 2024, with investment fraud up 34 percent.",
+    "attribution": "UK Finance and the Payment Systems Regulator",
+    "key": "uk_app_scams_2024",
+    "provenance": "independent",
+    "scope": "UK authorised push payment losses, 2024",
+    "suffix": "",
+    "value": "GBP 450.7M"
+  },
+  {
+    "approved_text": "UPI fraud in FY24 totalled 1,087 crore rupees across 13.42 lakh reported cases.",
+    "attribution": "Ministry of Finance, Lok Sabha reply",
+    "key": "upi_fraud_fy24",
+    "provenance": "independent",
+    "scope": "UPI fraud, FY24, 13.42 lakh cases",
+    "suffix": "",
+    "value": "INR 1,087 crore"
+  },
+  {
+    "approved_text": "The Reserve Bank recorded 13,516 digital payment fraud cases in FY2024-25, 56.5 percent of all reported banking frauds.",
+    "attribution": "Reserve Bank of India Annual Report FY2024-25",
+    "key": "rbi_digital_payment_fraud",
+    "provenance": "independent",
+    "scope": "RBI reported digital payment fraud, FY2024-25",
+    "suffix": "",
+    "value": "13,516 cases"
+  },
+  {
+    "approved_text": "Synthetic identity accounts for 29 percent of identity fraud.",
+    "attribution": "The Payments Association",
+    "key": "synthetic_identity_share",
+    "provenance": "independent",
+    "scope": "synthetic identity as a share of identity fraud",
+    "suffix": "",
+    "value": "29%"
+  },
+  {
+    "approved_text": "One deepfake video call moved 25.6 million dollars across fifteen transfers in a single day.",
+    "attribution": "Arup incident disclosure",
+    "key": "arup_deepfake_loss",
+    "provenance": "independent",
+    "scope": "single deepfake-enabled transfer sequence, Hong Kong, January 2024",
+    "suffix": "",
+    "value": "$25.6M"
+  },
+  {
+    "approved_text": "Business email compromise cost 2.77 billion dollars across 21,442 US incidents in 2024.",
+    "attribution": "FBI Internet Crime Complaint Center",
+    "key": "ic3_bec_2024",
+    "provenance": "independent",
+    "scope": "US business email compromise losses, 2024",
+    "suffix": "",
+    "value": "$2.77B"
+  },
+  {
+    "approved_text": "Do-not-honor and insufficient-funds together account for roughly 76 percent of all card declines.",
+    "attribution": "Visa Global Declines",
+    "key": "de39_soft_decline_share",
+    "provenance": "independent",
+    "scope": "DE39 codes 05 and 51 as a share of all declines, global",
+    "suffix": "",
+    "value": "~76%"
+  },
+  {
+    "approved_text": "The do-not-honor share is regionally skewed: about 10 percent of declines in the US against 34 percent in India.",
+    "attribution": "Visa Global Declines",
+    "key": "de39_05_india_skew",
+    "provenance": "independent",
+    "scope": "DE39 code 05 share of declines, India",
+    "suffix": "",
+    "value": "34%"
+  },
+  {
+    "approved_text": "Card-not-present approval runs near 85 percent against roughly 95 percent card-present.",
+    "attribution": "Visa and Mastercard published acceptance data",
+    "key": "approval_rate_cnp",
+    "provenance": "independent",
+    "scope": "card-not-present approval rate",
+    "suffix": "",
+    "value": "~85%"
+  },
+  {
+    "approved_text": "Between 80 and 85 percent of 3-D Secure 2.x authentications complete in the frictionless lane.",
+    "attribution": "EMVCo 3DS 2.x deployment data",
+    "key": "threeds_frictionless_share",
+    "provenance": "independent",
+    "scope": "3-D Secure 2.x frictionless share in well-configured deployments",
+    "suffix": "",
+    "value": "80-85%"
+  },
+  {
+    "approved_text": "Cross-border card-not-present fraud runs about ten times the domestic share, and 75 percent of UK e-commerce CNP fraud occurs at non-UK merchants.",
+    "attribution": "ECB/EBA payment fraud report and UK Finance",
+    "key": "cross_border_sca_gap",
+    "provenance": "independent",
+    "scope": "cross-border CNP fraud share versus domestic",
+    "suffix": "",
+    "value": "~10x"
+  },
+  {
+    "approved_text": "The transaction risk analysis exemption allows 100 euro at 13 basis points, 250 euro at 6, 500 euro at 1, and mandates strong authentication above that.",
+    "attribution": "RTS (EU) 2018/389 Article 18",
+    "key": "psd2_tra_thresholds",
+    "provenance": "independent",
+    "scope": "PSD2 transaction risk analysis exemption thresholds",
+    "suffix": "",
+    "value": "13 / 6 / 1 bps"
+  },
+  {
+    "approved_text": "SEPA Instant settles in ten seconds and the 100,000 euro cap was removed by the Instant Payments Regulation.",
+    "attribution": "EPC scheme rulebook and Instant Payments Regulation 2024/886",
+    "key": "sepa_instant_sla",
+    "provenance": "independent",
+    "scope": "SEPA Instant settlement service level",
+    "suffix": "",
+    "value": "10 seconds"
+  },
+  {
+    "approved_text": "Public fraud benchmarks range from 0.13 percent prevalence on PaySim to about 3.5 percent on IEEE-CIS.",
+    "attribution": "PaySim, ULB, BankSim and IEEE-CIS dataset documentation",
+    "key": "benchmark_prevalence",
+    "provenance": "independent",
+    "scope": "public fraud benchmark prevalence",
+    "suffix": "",
+    "value": "0.13% - 3.5%"
+  },
+  {
+    "approved_text": "A 2026 benchmark shows row-independent generators degrade behavioural fraud signal 24 to 100 times while train-synthetic-test-real AUROC stays near baseline.",
+    "attribution": "arXiv:2604.13125 (2026), not yet independently replicated",
+    "key": "behavioural_degradation_range",
+    "provenance": "independent",
+    "scope": "row-independent tabular generators",
+    "suffix": "single study, not yet replicated",
+    "value": "24-100x"
+  },
+  {
+    "approved_text": "The first-digit chi-square critical value is 15.507 at eight degrees of freedom and alpha 0.05.",
+    "attribution": "standard chi-square distribution",
+    "key": "benford_chi2_critical",
+    "provenance": "independent",
+    "scope": "first-digit chi-square critical value, 8 degrees of freedom, alpha 0.05",
+    "suffix": "",
+    "value": "15.507"
+  },
+  {
+    "approved_text": "Nigrini calls a mean absolute deviation below 0.006 close conformity, up to 0.012 acceptable, and above 0.015 nonconforming.",
+    "attribution": "Nigrini, Benford's Law",
+    "key": "benford_mad_bands",
+    "provenance": "independent",
+    "scope": "Nigrini mean absolute deviation conformity bands",
+    "suffix": "",
+    "value": "0.006 / 0.012 / 0.015"
+  },
+  {
+    "approved_text": "A graph anomaly benchmark found boosted trees on neighbour-aggregated features beat the best graph neural network by 2.0 points of AUROC and 12.9 percent of AUPRC.",
+    "attribution": "GADBench, NeurIPS 2023",
+    "key": "gadbench_tree_over_gnn",
+    "provenance": "independent",
+    "scope": "boosted trees on neighbour-aggregated features versus the best GNN",
+    "suffix": "",
+    "value": "+12.9% AUPRC"
+  },
+  {
+    "approved_text": "Production fraud systems run near thirteen false positives for every true positive.",
+    "attribution": "Capital One patent filing (13.01:1)",
+    "key": "production_fp_tp_ratio",
+    "provenance": "independent",
+    "scope": "production fraud system false positives per true positive",
+    "suffix": "",
+    "value": "~13:1"
+  },
+  {
+    "approved_text": "Merchants reject about 6 percent of e-commerce orders, and between 2 and 10 percent of those rejections are legitimate customers.",
+    "attribution": "Merchant Risk Council 2024 benchmark",
+    "key": "merchant_order_rejection",
+    "provenance": "independent",
+    "scope": "e-commerce orders rejected, of which 2-10 percent are legitimate",
+    "suffix": "",
+    "value": "6%"
+  },
+  {
+    "approved_text": "On the ULB dataset the same model scores 0.957 ROC-AUC and 0.708 PR-AUC, which is why PayLoop never leads with ROC.",
+    "attribution": "ULB credit card fraud dataset",
+    "key": "roc_vs_pr_illustration",
+    "provenance": "independent",
+    "scope": "ULB credit card dataset, ROC-AUC against PR-AUC",
+    "suffix": "",
+    "value": "0.957 vs 0.708"
+  },
+  {
+    "approved_text": "A HyperLogLog counter costs 12 kilobytes at roughly 0.81 percent standard error.",
+    "attribution": "Redis HyperLogLog documentation",
+    "key": "hyperloglog_cost",
+    "provenance": "independent",
+    "scope": "HyperLogLog counter memory and standard error",
+    "suffix": "",
+    "value": "12 KB, 0.81%"
+  },
+  {
+    "approved_text": "Mastercard scores Decision Intelligence in under 50 milliseconds.",
+    "attribution": "Mastercard",
+    "key": "mastercard_di_latency",
+    "provenance": "vendor",
+    "scope": "Mastercard Decision Intelligence scoring latency",
+    "suffix": "vendor-reported",
+    "value": "<50 ms"
+  },
+  {
+    "approved_text": "Visa reports 25 to 26 billion dollars of fraud prevented by Advanced Authorization.",
+    "attribution": "Visa press release",
+    "key": "visa_aa_prevented",
+    "provenance": "vendor",
+    "scope": "fraud prevented by Visa Advanced Authorization",
+    "suffix": "vendor-reported",
+    "value": "$25-26B"
+  },
+  {
+    "approved_text": "One attack family and one entity cohort, neither of which enters any training pool.",
+    "attribution": "this repository",
+    "key": "blind_holdout",
+    "provenance": "independent",
+    "scope": "PayLoop run 2026-08-31-final",
+    "suffix": "",
+    "value": "V07 + 10% entity cohort"
+  },
+  {
+    "approved_text": "Eight injector modules, twelve injector classes, covering twelve of thirty-two vectors.",
+    "attribution": "this repository",
+    "key": "coverage_split",
+    "provenance": "independent",
+    "scope": "PayLoop injector coverage",
+    "suffix": "",
+    "value": "8 modules, 12 classes, 12 of 32 vectors"
+  },
+  {
+    "approved_text": "Twenty-two vectors are documented, five emerging, five speculative.",
+    "attribution": "this repository",
+    "key": "registry_status_split",
+    "provenance": "independent",
+    "scope": "PayLoop registry status distribution",
+    "suffix": "",
+    "value": "22 / 5 / 5"
+  },
+  {
+    "approved_text": "The graph channel stays in the ensemble only if it adds three absolute PR-AUC points, not three percent.",
+    "attribution": "this repository",
+    "key": "gnn_kill_bar",
+    "provenance": "independent",
+    "scope": "absolute PR-AUC lift required to keep the graph channel",
+    "suffix": "",
+    "value": "0.03"
+  },
+  {
+    "approved_text": "No autonomous block occurs below 0.90, and the top band routes to a human analyst queue rather than a silent decline.",
+    "attribution": "this repository",
+    "key": "ladder_no_autonomous_block",
+    "provenance": "independent",
+    "scope": "PayLoop mitigation ladder",
+    "suffix": "",
+    "value": "0.90"
+  }
+]

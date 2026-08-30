@@ -4,19 +4,20 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from scipy.stats import ks_2samp
+from scipy.stats import ks_2samp, kstwobign
 
 from runtime.config import PayLoopConfig
 
 FIDELITY_KS_MAX: float = 0.10
 FIDELITY_KS_COLUMN_PASS_FRAC: float = 0.90
 KS_MIN_P_VALUE: float = 0.05
-# The two-sample KS critical value at alpha 0.05 is about 1.36 * sqrt(2/n). At n = 500 that
-# lands near 0.086, just inside the declared 0.10 effect size, so the statistic and the
-# p-value agree. At tens of thousands of rows the test rejects a 0.02 difference and the
-# threshold in the specification would mean nothing.
-KS_SAMPLE_ROWS: int = 500
-KS_REPEATS: int = 9
+# The statistic is estimated on a large sample so the effect size is measured precisely,
+# and the p-value is then evaluated at a fixed reference size where it still discriminates.
+# Reading the p-value at the estimation size would reject a 0.02 difference out of tens of
+# thousands of rows and make the declared 0.10 threshold meaningless; estimating at 500
+# rows would leave the statistic itself too noisy to compare against that threshold.
+KS_STATISTIC_ROWS: int = 20_000
+KS_REFERENCE_ROWS: int = 500
 
 # Benford critical value at 8 degrees of freedom and alpha 0.05.
 BENFORD_CHI2_MAX: float = 15.507
@@ -80,6 +81,11 @@ def _sample(values: np.ndarray, limit: int, rng: np.random.Generator) -> np.ndar
     return rng.choice(values, size=limit, replace=False)
 
 
+def reference_p_value(statistic: float) -> float:
+    """Two-sample KS p-value the measured effect would carry at the reference sample size."""
+    return float(kstwobign.sf(statistic * np.sqrt(KS_REFERENCE_ROWS / 2.0)))
+
+
 def first_digits(amount: np.ndarray) -> np.ndarray:
     positive = amount[np.isfinite(amount) & (amount > 0)]
     if positive.size == 0:
@@ -117,22 +123,13 @@ def evaluate(batch: pd.DataFrame, reference: pd.DataFrame, config: PayLoopConfig
     passing = 0
     worst_statistic = 0.0
     for column in shared:
-        # Repeated draws so a single unlucky sample cannot decide a column.
-        statistics, p_values = [], []
-        for _ in range(KS_REPEATS):
-            left = _sample(batch_numeric[column].to_numpy("float64"), KS_SAMPLE_ROWS, rng)
-            right = _sample(reference_numeric[column].to_numpy("float64"), KS_SAMPLE_ROWS, rng)
-            if left.size < 2 or right.size < 2:
-                continue
-            statistic, p_value = ks_2samp(left, right)
-            statistics.append(float(statistic))
-            p_values.append(float(p_value))
-        if not statistics:
+        left = _sample(batch_numeric[column].to_numpy("float64"), KS_STATISTIC_ROWS, rng)
+        right = _sample(reference_numeric[column].to_numpy("float64"), KS_STATISTIC_ROWS, rng)
+        if left.size < 2 or right.size < 2:
             continue
-        statistic = float(np.median(statistics))
-        p_value = float(np.median(p_values))
+        statistic = float(ks_2samp(left, right).statistic)
         worst_statistic = max(worst_statistic, statistic)
-        if statistic < config.fidelity_ks_max and p_value > KS_MIN_P_VALUE:
+        if statistic < config.fidelity_ks_max and reference_p_value(statistic) > KS_MIN_P_VALUE:
             passing += 1
     column_pass_frac = passing / len(shared) if shared else 0.0
 

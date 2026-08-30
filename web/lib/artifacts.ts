@@ -215,6 +215,10 @@ export interface PerVectorRecall {
 export interface ScopeMatrix {
   matrix: Record<string, Record<string, number>>;
   collapse: Record<string, boolean>;
+  status: Record<
+    string,
+    { rows: number; positives: number; party_id: string | null; status: string; detail?: string }
+  >;
 }
 
 export interface Latency {
