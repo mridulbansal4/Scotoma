@@ -1,5 +1,6 @@
 """Round orchestration: bootstrap, run_round, finalise."""
 
+import gc
 import json
 import logging
 import platform
@@ -61,6 +62,9 @@ LOGGER = logging.getLogger("payloop.loop")
 ALERT_QUEUE_SIZE: int = 200
 REFERENCE_SAMPLE_ROWS: int = 60_000
 REFERENCE_ENTITY_FRACTION: float = 0.5
+# The gate only ever compares samples, and the carrier is drawn at a small multiple of a
+# campaign's size. Bounding both keeps their memory flat as the simulated volume grows.
+CARRIER_POOL_ROWS: int = 200_000
 CARRIER_MULTIPLIER: float = 24.0
 DISTRIBUTION_BINS: int = 40
 HOUR_BINS: int = 24
@@ -237,6 +241,10 @@ def bootstrap(config: PayLoopConfig) -> LoopContext:
     context_features = build_feature_context(population, partition.pool_events)
     pool = _seed_pool(population, partition.pool_events, window, config)
     blind_events = _seed_blind(population, partition.blind_events, window, config)
+    # The partition's own frames are now duplicated inside pool, reference, carrier and the
+    # evaluation window. Releasing them keeps one copy of the traffic resident instead of two.
+    del partition
+    gc.collect()
 
     detector = Detector(config, context=context_features, sim_start=SIM_START).fit(
         pool, blind=blind_events
@@ -286,7 +294,9 @@ def _split_reference_and_carrier(legit: pd.DataFrame) -> tuple[pd.DataFrame, pd.
     unique = np.sort(entities.unique())
     held = set(unique[rng.random(unique.size) < REFERENCE_ENTITY_FRACTION].tolist())
     selector = entities.isin(held).to_numpy()
-    return legit[selector].reset_index(drop=True), legit[~selector].reset_index(drop=True)
+    reference = _carrier_entities(legit[selector], REFERENCE_SAMPLE_ROWS, rng)
+    carrier = _carrier_entities(legit[~selector], CARRIER_POOL_ROWS, rng)
+    return reference, carrier
 
 
 def _carrier_entities(
@@ -542,6 +552,7 @@ def run_round(context: LoopContext, round_index: int) -> dict:
     if retained:
         context.detector = candidate
         context.detector.export_onnx()
+    gc.collect()
 
     record = context.metrics.record(
         round_index,
