@@ -1,0 +1,25 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends build-essential libgomp1 git \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY runtime ./runtime
+COPY schema ./schema
+COPY registry ./registry
+COPY generate ./generate
+COPY fidelity ./fidelity
+COPY defend ./defend
+COPY loop ./loop
+COPY api ./api
+COPY artifacts ./artifacts
+COPY runs ./runs
+COPY pyproject.toml ./
+
+EXPOSE 8000
+CMD ["uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "8000"]

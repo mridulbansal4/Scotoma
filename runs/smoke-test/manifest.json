@@ -1,0 +1,28 @@
+{
+  "blind_holdout_entity_frac": 0.1,
+  "blind_holdout_vectors": [
+    "V07"
+  ],
+  "config_hash": "e4682a12c9d93970",
+  "cost_matrix": {
+    "chargeback_fee": 25.0,
+    "customer_ltv": 1800.0,
+    "merchant_margin": 0.22,
+    "p_attrition": 0.32
+  },
+  "git_sha": "uncommitted",
+  "gnn_enabled": true,
+  "gnn_min_lift_prauc": 0.03,
+  "host": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel, Python 3.11.9",
+  "label_embargo_days": 30,
+  "ladder_bands": {
+    "approve_max": 0.3,
+    "hold_max": 0.9,
+    "stepup_max": 0.7
+  },
+  "loop_rounds": 3,
+  "population_seed": 42,
+  "run_id": "smoke-test",
+  "sim_days": 180,
+  "started_ts": "2026-08-30T11:43:24.037430+00:00"
+}

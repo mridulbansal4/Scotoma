@@ -1,0 +1,580 @@
+- id: V01
+  name: PAN/CVV enumeration
+  rails: [CARD_CNP]
+  tier: 1
+  mechanism: distributed low-velocity probing of candidate card numbers across many merchants
+  genai_delta: LLM-tuned scripts spread probes under per-merchant rate limits
+  observable_signals:
+    - burst of low-value auths per device or ip
+    - decline_rate inversion versus population baseline
+    - many distinct pan_token on one device_id
+    - low entropy in PAN sequence within one bin
+    - MCC clustering on weak-control merchants
+  status: documented
+  sources: ["Visa PERC H2 2024", "Visa Payment Fraud Disruption 2025"]
+  sim_difficulty: low
+  injector: generate.injectors.enumeration:EnumerationCampaign
+  expected_features: [distinct_pan_per_device_10m, declrate_ip_1h, bin_seq_entropy]
+  countermeasure: velocity throttling + BIN anomaly + merchant control uplift
+  blind_holdout: false
+
+- id: V02
+  name: BIN attack
+  rails: [CARD_CNP]
+  tier: 1
+  mechanism: automated validation of full card numbers derived from a single issuer BIN range
+  genai_delta: automated candidate expansion and validation from a BIN prefix
+  observable_signals:
+    - one or two low-dollar auths per candidate PAN
+    - single-BIN concentration across many merchants
+    - approval-rate spike following a run of declines
+  status: documented
+  sources: ["Visa PERC H2 2024"]
+  sim_difficulty: low
+  injector: generate.injectors.enumeration:BinAttackCampaign
+  expected_features: [bin_seq_entropy, declrate_merchant_id_1h, cnt_ip_10min]
+  countermeasure: BIN-level velocity ceilings + issuer decline-pattern feedback
+  blind_holdout: false
+
+- id: V03
+  name: 3DS2 frictionless-flow abuse
+  rails: [CARD_CNP]
+  tier: 2
+  mechanism: synthesised device and browser fingerprints that place transactions in the frictionless authentication lane
+  genai_delta: fabricated coherent device profiles at scale defeat naive fingerprint stability checks
+  observable_signals:
+    - AReq device data inconsistent across transactions on one card
+    - duplicated browser fields across unrelated cardholders
+    - 3DS Method URL fingerprint mismatched against authentication device
+  status: emerging
+  sources: ["EMVCo 3DS 2.x specification", "issuer authentication telemetry 2025"]
+  sim_difficulty: medium
+  injector: null
+  expected_features: [threeds_flow_code, eci_semantic_code, cnt_device_id_24h]
+  countermeasure: fingerprint stability scoring + challenge-rate floors per device cohort
+  blind_holdout: false
+
+- id: V04
+  name: Token provisioning fraud
+  rails: [CARD_CNP, CARD_CP]
+  tier: 2
+  mechanism: social-engineered one-time passcode capture followed by provisioning of a stolen card into an attacker-controlled wallet
+  genai_delta: cloned voice on the servicing call raises the success rate of the passcode capture
+  observable_signals:
+    - new token bound to a device never seen for this cardholder
+    - provisioning geography distant from cardholder history
+    - rapid spend concentration immediately after provisioning
+  status: documented
+  sources: ["Visa PERC H2 2024"]
+  sim_difficulty: medium
+  injector: null
+  expected_features: [device_age_hours, impossible_travel_kmh, amount_z_vs_entity_history]
+  countermeasure: step-up on provisioning + device-binding attestation + cooling period
+  blind_holdout: false
+
+- id: V05
+  name: Authorised push payment scam
+  rails: [UPI, SEPA_INST, ACH]
+  tier: 1
+  mechanism: victim-authorised transfer to a first-time payee following a persuasion campaign
+  genai_delta: LLM-personalised romance, investment and bank-investigator scripts at population scale
+  observable_signals:
+    - transfer to a first-time payee shortly after account contact changes
+    - round-number or escalating amount sequence
+    - beneficiary account receiving fan-in from unrelated payers
+    - funds forwarded onward within minutes of receipt
+  status: documented
+  sources: ["UK Finance Annual Fraud Report 2025", "RBI Annual Report FY2024-25", "PSR APP data"]
+  sim_difficulty: medium
+  injector: generate.injectors.app_mule:AppScamCampaign
+  expected_features: [first_time_payee, payee_age_hours, amount_z_vs_entity_history]
+  countermeasure: confirmation-of-payee + payment-purpose friction + beneficiary cooling period
+  blind_holdout: false
+
+- id: V06
+  name: UPI collect-request and mandate abuse
+  rails: [UPI]
+  tier: 1
+  mechanism: fraudulent collect requests and autopay mandates approved by a socially engineered payer
+  genai_delta: scripted multilingual social engineering raises collect-request approval rates
+  observable_signals:
+    - collect-request approvals to previously unseen VPAs
+    - autopay mandate created against a newly registered payee
+    - elevated collect-to-push ratio on one payer device
+  status: documented
+  sources: ["NPCI collect-request guidance", "RBI Annual Report FY2024-25"]
+  sim_difficulty: medium
+  injector: generate.injectors.app_mule:CollectRequestAbuseCampaign
+  expected_features: [upi_txn_type_code, payee_name_match_num, first_time_payee]
+  countermeasure: collect deprecation for unknown payees + mandate review prompts
+  blind_holdout: false
+
+- id: V07
+  name: Synthetic identity at scale
+  rails: [CARD_CNP, UPI, SEPA_INST, ACH]
+  tier: 2
+  mechanism: fabricated but internally coherent identity bundles that open thin-file accounts and ramp transaction volume
+  genai_delta: coherent PII bundles and supporting documents produced in volume
+  observable_signals:
+    - thin-file accounts with no prior bureau history
+    - device and IP shared across nominally distinct identities
+    - rapid transaction ramp after a dormant period
+    - identifier velocity anomalies across the onboarding cohort
+  status: documented
+  sources: ["FinCEN synthetic identity advisory", "The Payments Association 2025"]
+  sim_difficulty: high
+  injector: generate.injectors.synthetic_id:SyntheticIdentityRingCampaign
+  expected_features: [payer_pagerank, component_size, device_age_hours]
+  countermeasure: identity-graph clustering + bureau thin-file scoring + device sharing limits
+  blind_holdout: true
+
+- id: V08
+  name: Deepfake video KYC bypass
+  rails: [CARD_CNP, UPI]
+  tier: 3
+  mechanism: real-time face replacement during a liveness check at onboarding
+  genai_delta: consumer-grade real-time face swap defeats passive liveness models
+  observable_signals:
+    - virtual-camera injection telemetry on the capture device
+    - liveness-model confidence anomaly against the population distribution
+    - capture device inconsistent with the presented identity document
+  status: documented
+  sources: ["FinCEN deepfake alert 2024", "Veriff identity fraud report 2025"]
+  sim_difficulty: high
+  injector: null
+  expected_features: [device_age_hours, payer_pagerank, component_size]
+  countermeasure: injection-attack detection at the capture layer + document-device consistency checks
+  blind_holdout: false
+
+- id: V09
+  name: Voice-cloned call-centre takeover
+  rails: [CARD_CNP, UPI]
+  tier: 3
+  mechanism: cloned customer voice presented against a voice-biometric or agent verification step
+  genai_delta: short reference audio is now sufficient for a passing voiceprint
+  observable_signals:
+    - voiceprint confidence anomaly relative to the enrolled profile
+    - call metadata inconsistent with the customer device history
+    - credential or contact change immediately following the call
+  status: documented
+  sources: ["BNY fraud advisory 2025", "Veriff identity fraud report 2025"]
+  sim_difficulty: high
+  injector: null
+  expected_features: [device_age_hours, impossible_travel_kmh, first_time_payee]
+  countermeasure: multi-factor servicing verification + post-call change embargo
+  blind_holdout: false
+
+- id: V10
+  name: Document forgery at onboarding
+  rails: [CARD_CNP, ACH]
+  tier: 3
+  mechanism: fabricated identity documents and income evidence presented during account or credit onboarding
+  genai_delta: hyper-realistic document rendering removes the visual tells reviewers relied on
+  observable_signals:
+    - metadata and EXIF anomalies on submitted images
+    - template reuse across nominally unrelated applications
+    - document-detector confidence below the population band
+  status: documented
+  sources: ["FinCEN deepfake alert 2024"]
+  sim_difficulty: high
+  injector: null
+  expected_features: [payer_pagerank, component_size, device_age_hours]
+  countermeasure: document forensics + cross-application template clustering
+  blind_holdout: false
+
+- id: V11
+  name: LLM-personalised romance and investment fraud
+  rails: [UPI, SEPA_INST, CARD_CNP]
+  tier: 2
+  mechanism: extended persuasion followed by a large first-time transfer from the victim
+  genai_delta: adaptive multilingual persuasion sustained across many victims at once
+  observable_signals:
+    - long dormancy then a large transfer to a first-time payee
+    - beneficiary associated with crypto or gambling categories
+    - in-session behavioural change against the customer baseline
+  status: documented
+  sources: ["Sift digital trust index 2025", "Visa scams disruption report H2 2025"]
+  sim_difficulty: medium
+  injector: null
+  expected_features: [first_time_payee, amount_z_vs_entity_history, mcc_novelty_for_entity]
+  countermeasure: scam-intent prompts at payment initiation + beneficiary risk scoring
+  blind_holdout: false
+
+- id: V12
+  name: Business email compromise
+  rails: [ACH, SEPA_INST]
+  tier: 2
+  mechanism: payment instruction to an attacker-controlled account presented as a routine vendor or executive request
+  genai_delta: deepfake voice and video on the confirmation call removes the last human check
+  observable_signals:
+    - vendor bank details changed shortly before payment
+    - off-cycle payment outside the established schedule
+    - approval workflow shortened relative to the organisation baseline
+  status: documented
+  sources: ["FBI IC3 2024 report", "Arup incident disclosure 2024"]
+  sim_difficulty: medium
+  injector: null
+  expected_features: [first_time_payee, payee_age_hours, amount_z_vs_entity_history]
+  countermeasure: out-of-band vendor verification + dual approval on detail changes
+  blind_holdout: false
+
+- id: V13
+  name: Refund and chargeback abuse
+  rails: [CARD_CNP]
+  tier: 3
+  mechanism: dispute of legitimately received goods or services by the genuine cardholder
+  genai_delta: convincing dispute narratives drafted in volume raise representment loss rates
+  observable_signals:
+    - chargeback ratio far above the merchant cohort baseline
+    - refund routed to an instrument other than the original
+    - repeat disputants clustered on item-not-received reasons
+  status: documented
+  sources: ["Merchant Risk Council 2024 benchmark"]
+  sim_difficulty: medium
+  injector: null
+  expected_features: [cnt_pan_token_7d, amount_z_vs_entity_history, merchant_control_strength]
+  countermeasure: delivery-evidence capture + repeat-disputant scoring
+  blind_holdout: false
+
+- id: V14
+  name: Invoice and vendor fraud
+  rails: [ACH, SEPA_INST]
+  tier: 3
+  mechanism: payment against a near-duplicate invoice carrying altered remittance details
+  genai_delta: realistic invoice rendering removes the formatting tells reviewers relied on
+  observable_signals:
+    - payee bank details differing slightly from the vendor record
+    - near-duplicate invoice numbers within a short window
+    - remittance account newly associated with an established vendor
+  status: documented
+  sources: ["FBI IC3 2024 report"]
+  sim_difficulty: medium
+  injector: null
+  expected_features: [first_time_payee, payee_age_hours, fanin_payee_24h]
+  countermeasure: vendor master-data controls + remittance change verification
+  blind_holdout: false
+
+- id: V15
+  name: Transaction laundering
+  rails: [CARD_CNP, CARD_CP]
+  tier: 3
+  mechanism: prohibited sales processed through a compliant-looking storefront under an unrelated MCC
+  genai_delta: plausible storefront content lowers the cost of maintaining the front
+  observable_signals:
+    - MCC inconsistent with observed basket composition
+    - site traffic and settlement volume badly mismatched
+    - infrastructure shared with previously actioned merchants
+  status: emerging
+  sources: ["Visa acquirer risk programme bulletins 2025"]
+  sim_difficulty: high
+  injector: null
+  expected_features: [merchant_control_strength, mcc_novelty_for_entity, merchant_benford_dev_24h]
+  countermeasure: merchant content monitoring + settlement-to-traffic reconciliation
+  blind_holdout: false
+
+- id: V16
+  name: Fake merchant onboarding
+  rails: [CARD_CNP, CARD_CP]
+  tier: 3
+  mechanism: acquiring relationship opened on a fabricated business identity followed by a volume ramp and exit
+  genai_delta: synthetic business identity packages assembled faster than review capacity
+  observable_signals:
+    - thin business history with no verifiable trading record
+    - beneficial owner or device shared with prior actioned merchants
+    - rapid volume ramp with elevated refund and chargeback rates
+  status: documented
+  sources: ["Visa acquirer risk programme bulletins 2025"]
+  sim_difficulty: high
+  injector: null
+  expected_features: [merchant_control_strength, payee_age_hours, payee_bank_degree]
+  countermeasure: acquiring due diligence uplift + beneficial-owner graph checks
+  blind_holdout: false
+
+- id: V17
+  name: Collusive merchants and bust-out
+  rails: [CARD_CNP, CARD_CP]
+  tier: 3
+  mechanism: coordinated circular settlement between linked merchants and cardholder accounts
+  genai_delta: coordination tooling lowers the effort of running many linked entities at once
+  observable_signals:
+    - circular value flow between a small closed set of entities
+    - approval rate abnormally high against the merchant cohort
+    - settlement routed to accounts linked to the merchant principals
+  status: emerging
+  sources: ["Europol payment fraud typologies 2025"]
+  sim_difficulty: medium
+  injector: null
+  expected_features: [component_size, payer_pagerank, payee_pagerank]
+  countermeasure: settlement-graph community detection + linked-entity exposure limits
+  blind_holdout: false
+
+- id: V18
+  name: Delegated agent credential abuse
+  rails: [AGENTIC]
+  tier: 1
+  mechanism: payment credential delegated to an AI shopping agent presented outside the scope the user authorised
+  genai_delta: autonomous agents hold spending authority no prior consumer software held
+  observable_signals:
+    - settled amount above the mandate ceiling
+    - payee absent from the mandate merchant allowlist
+    - settlement timestamp after the mandate expiry
+  status: speculative
+  sources: ["AP2 specification draft 2026", "Visa Trusted Agent Protocol 2026"]
+  sim_difficulty: medium
+  injector: generate.injectors.agentic_scope:MandateScopeBreachCampaign
+  expected_features: [mandate_scope_breach, settle_vs_intent_amount_delta, human_present_flag_num]
+  countermeasure: mandate scope enforcement at the issuer + expiry-aware authorisation
+  blind_holdout: false
+
+- id: V19
+  name: Prompt injection against agent checkout
+  rails: [AGENTIC]
+  tier: 1
+  mechanism: page content that alters the basket, price or payee an agent settles after the user has approved the cart
+  genai_delta: agents parse untrusted page content as instruction, which no card-present flow ever did
+  observable_signals:
+    - cart hash at intent differing from cart hash at settlement
+    - payee at settlement differing from payee at intent
+    - line items or unit prices outside the approved basket composition
+  status: emerging
+  sources: ["Palo Alto Unit 42 agentic commerce research Jan 2026", "AP2 specification draft 2026"]
+  sim_difficulty: medium
+  injector: generate.injectors.agentic_injection:CartInjectionCampaign
+  expected_features: [cart_hash_mismatch, settle_vs_intent_amount_delta, human_present_flag_num]
+  countermeasure: cart-hash binding verified at settlement + payee equality assertion
+  blind_holdout: false
+
+- id: V20
+  name: Agent impersonation
+  rails: [AGENTIC]
+  tier: 1
+  mechanism: automated client presenting itself as an accredited AI agent without a valid attestation
+  genai_delta: agent traffic is now common enough that impersonation blends into legitimate volume
+  observable_signals:
+    - agent attestation missing or failing verification
+    - operator identifier inconsistent with the attestation subject
+    - agent identifier appearing across unrelated operator estates
+  status: emerging
+  sources: ["Visa Trusted Agent Protocol 2026", "Web Bot Auth draft 2026"]
+  sim_difficulty: medium
+  injector: generate.injectors.agentic_replay:AgentImpersonationCampaign
+  expected_features: [attestation_invalid, human_present_flag_num, cnt_agent_id_1h]
+  countermeasure: attestation verification at acceptance + operator allowlisting
+  blind_holdout: false
+
+- id: V21
+  name: Mandate replay and forgery
+  rails: [AGENTIC]
+  tier: 1
+  mechanism: reuse or fabrication of a signed payment mandate outside its intended single settlement
+  genai_delta: mandate-bearing protocols are new and replay protection is unevenly implemented
+  observable_signals:
+    - mandate nonce presented more than once
+    - duplicate mandate identifier across separate settlements
+    - settled amount inconsistent with the signed mandate amount
+  status: speculative
+  sources: ["Five Attacks on x402 (2026)", "AP2 specification draft 2026"]
+  sim_difficulty: medium
+  injector: generate.injectors.agentic_replay:MandateReplayCampaign
+  expected_features: [nonce_reused, settle_vs_intent_amount_delta, mandate_scope_breach]
+  countermeasure: server-side nonce ledger + single-use mandate binding
+  blind_holdout: false
+
+- id: V22
+  name: Adversarial evasion of the fraud scorer
+  rails: [CARD_CNP, UPI, AGENTIC]
+  tier: 2
+  mechanism: constraint-aware perturbation of controllable transaction fields that keeps the score below the decision threshold
+  genai_delta: automated search over feasible field combinations replaces manual trial and error
+  observable_signals:
+    - feature values clustered just below decision thresholds
+    - unusual but individually valid field combinations
+    - feature-space drift concentrated on the most attributed features
+  status: documented
+  sources: ["CAPGD/CAA adversarial tabular research 2025", "Feedzai attack propagation study"]
+  sim_difficulty: medium
+  injector: generate.injectors.evasion:ScorerEvasionCampaign
+  expected_features: [amount_z_vs_entity_history, declrate_ip_1h, cnt_device_id_10min]
+  countermeasure: threshold randomisation + adversarial training on realised evasions
+  blind_holdout: false
+
+- id: V23
+  name: Training data poisoning
+  rails: [CARD_CNP, UPI]
+  tier: 3
+  mechanism: mislabelled or crafted transactions entering the training or analyst feedback loop
+  genai_delta: coordinated entity behaviour can be maintained cheaply across a retraining cycle
+  observable_signals:
+    - label-flip clusters concentrated on a small entity set
+    - anomalous new-entity behaviour immediately before a retrain
+    - performance decay confined to one typology after an update
+  status: speculative
+  sources: ["adversarial machine learning research 2025"]
+  sim_difficulty: high
+  injector: null
+  expected_features: [component_size, payer_pagerank, amount_z_vs_entity_history]
+  countermeasure: label provenance tracking + pre-retrain cohort review
+  blind_holdout: false
+
+- id: V24
+  name: Model extraction via decline feedback
+  rails: [CARD_CNP]
+  tier: 3
+  mechanism: systematic authorisation probing that reconstructs the shape of a decision boundary from accept and decline responses
+  genai_delta: search over the response surface is automatable end to end
+  observable_signals:
+    - grid-like sweeps across amount and MCC combinations
+    - many near-threshold authorisations from linked entities
+    - probing concentrated on a narrow score band
+  status: speculative
+  sources: ["model extraction research 2025"]
+  sim_difficulty: medium
+  injector: null
+  expected_features: [cnt_pan_token_1h, amount_z_vs_entity_history, declrate_ip_1h]
+  countermeasure: response-code coarsening + probing-pattern detection
+  blind_holdout: false
+
+- id: V25
+  name: Account takeover via GenAI phishing
+  rails: [CARD_CNP, UPI, SEPA_INST, ACH]
+  tier: 2
+  mechanism: credential capture through personalised phishing followed by session takeover and payee addition
+  genai_delta: personalised phishing content at scale lifts click and credential capture rates
+  observable_signals:
+    - login from a device and geography new to the account
+    - credential-stuffing velocity across the issuer estate
+    - contact detail change immediately followed by a payee addition
+  status: documented
+  sources: ["Sift digital trust index 2025"]
+  sim_difficulty: medium
+  injector: null
+  expected_features: [device_age_hours, impossible_travel_kmh, first_time_payee]
+  countermeasure: session risk scoring + change-then-pay embargo
+  blind_holdout: false
+
+- id: V26
+  name: First-party and bust-out lending fraud
+  rails: [ACH]
+  tier: 3
+  mechanism: credit built on a synthetic or manipulated profile then fully drawn with no intent to repay
+  genai_delta: supporting documentation and profile history are cheap to fabricate
+  observable_signals:
+    - rapid limit utilisation after a quiet build phase
+    - thin-file ramp inconsistent with declared income
+    - linked-entity clustering across applications
+  status: documented
+  sources: ["FinCEN loan fraud advisory"]
+  sim_difficulty: medium
+  injector: null
+  expected_features: [component_size, payer_pagerank, amount_z_vs_entity_history]
+  countermeasure: bust-out scoring on utilisation trajectory + linked-application review
+  blind_holdout: false
+
+- id: V27
+  name: QR-code swap fraud
+  rails: [UPI, CARD_CP]
+  tier: 2
+  mechanism: substitution of a merchant payment code at a physical point of sale so funds route elsewhere
+  genai_delta: scripted social engineering supports the substitution at the counter
+  observable_signals:
+    - payee VPA inconsistent with the merchant of record
+    - push payment to an unknown VPA at a physical acceptance point
+    - payee name verification result negative at a known merchant location
+  status: documented
+  sources: ["RBI Annual Report FY2024-25", "NPCI merchant advisories"]
+  sim_difficulty: low
+  injector: null
+  expected_features: [payee_name_match_num, first_time_payee, upi_txn_type_code]
+  countermeasure: dynamic merchant codes + payee-name verification at the terminal
+  blind_holdout: false
+
+- id: V28
+  name: Mule-network orchestration
+  rails: [UPI, SEPA_INST, ACH]
+  tier: 1
+  mechanism: layered movement of scam proceeds through many recruited accounts with short dwell times
+  genai_delta: recruitment and routing coordination scale beyond what a human controller managed
+  observable_signals:
+    - fan-in of unrelated payers onto one beneficiary account
+    - onward fan-out within minutes of receipt
+    - degree distribution anomaly in the account graph
+    - amount laddering across successive hops
+  status: documented
+  sources: ["Europol payment fraud typologies 2025", "UK Finance Annual Fraud Report 2025"]
+  sim_difficulty: medium
+  injector: generate.injectors.app_mule:MuleNetworkCampaign
+  expected_features: [fanin_payee_24h, fanout_payer_24h, payee_bank_degree, component_size]
+  countermeasure: mule-account graph scoring + inbound velocity limits on new beneficiaries
+  blind_holdout: false
+
+- id: V29
+  name: NFC relay and malicious mobile applications
+  rails: [CARD_CP]
+  tier: 3
+  mechanism: contactless credential relayed between a victim device and a distant acceptance terminal
+  genai_delta: relay and repackaging tooling is cheaper to produce and maintain
+  observable_signals:
+    - impossible-travel taps across distant terminals
+    - application integrity attestation failures on the payer device
+    - relay-consistent latency signatures in the acceptance trace
+  status: documented
+  sources: ["Visa PERC H2 2024"]
+  sim_difficulty: high
+  injector: null
+  expected_features: [impossible_travel_kmh, device_age_hours, pos_entry_mode_code]
+  countermeasure: proximity attestation + device integrity checks at acceptance
+  blind_holdout: false
+
+- id: V30
+  name: Deepfake-augmented executive wire fraud
+  rails: [ACH, SEPA_INST]
+  tier: 3
+  mechanism: off-policy wire authorised after a live video call in which an executive appearance is synthetic
+  genai_delta: live synthetic video removes the verification step organisations trusted most
+  observable_signals:
+    - off-policy wire to a newly added beneficiary
+    - urgency framing inconsistent with the payment class
+    - several rapid transfers within a single session
+  status: documented
+  sources: ["Arup incident disclosure 2024", "FBI IC3 2024 report"]
+  sim_difficulty: medium
+  injector: null
+  expected_features: [first_time_payee, amount_z_vs_entity_history, payee_age_hours]
+  countermeasure: out-of-band callback on high-value wires + policy-exception review
+  blind_holdout: false
+
+- id: V31
+  name: Cross-border SCA-gap exploitation
+  rails: [CARD_CNP]
+  tier: 2
+  mechanism: card-not-present volume routed through acquirers outside the regions where strong authentication is mandatory
+  genai_delta: routing selection across acquirer estates is automatable per transaction
+  observable_signals:
+    - acquirer region inconsistent with cardholder and merchant home region
+    - authentication absent on transactions that would require it domestically
+    - cross-border share of declines far above the population baseline
+  status: documented
+  sources: ["ECB/EBA payment fraud report 2024", "UK Finance Annual Fraud Report 2025"]
+  sim_difficulty: low
+  injector: generate.injectors.sca_gap:CrossBorderScaGapCampaign
+  expected_features: [cross_border, sca_exempt_flag, threeds_flow_code]
+  countermeasure: cross-border authentication policy + acquirer-region risk weighting
+  blind_holdout: false
+
+- id: V32
+  name: Adaptive concept-drift evasion
+  rails: [CARD_CNP, UPI]
+  tier: 3
+  mechanism: continuous tactical mutation that outpaces the defender retraining cycle
+  genai_delta: mutation cadence is no longer bounded by human iteration speed
+  observable_signals:
+    - rising decline-then-approve sequences across linked entities
+    - feature distribution drift concentrated between retrains
+    - precision at fixed alert volume degrading within a cycle
+  status: speculative
+  sources: ["adversarial concept drift research 2025"]
+  sim_difficulty: medium
+  injector: null
+  expected_features: [declrate_ip_1h, amount_z_vs_entity_history, mcc_novelty_for_entity]
+  countermeasure: drift monitoring on the population score distribution + shortened retrain cadence
+  blind_holdout: false

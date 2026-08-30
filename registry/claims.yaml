@@ -1,0 +1,263 @@
+- key: global_card_fraud_2024
+  value: "$33.41B"
+  scope: "global card fraud losses on $51.92T volume, 2024"
+  provenance: independent
+  attribution: "Nilson Report"
+  approved_text: "Global card fraud losses reached $33.41 billion in 2024 on $51.92 trillion of volume."
+  suffix: ""
+
+- key: global_card_fraud_rate_2024
+  value: "6.43 bps"
+  scope: "global card fraud rate, 2024"
+  provenance: independent
+  attribution: "Nilson Report"
+  approved_text: "That is a global card fraud rate of 6.43 basis points."
+  suffix: ""
+
+- key: false_declines_four_markets
+  value: "$50.7B"
+  scope: "US, UK, FR, DE, 2022"
+  provenance: vendor_commissioned
+  attribution: "Oxford Economics for Checkout.com"
+  approved_text: "False declines cost merchants $50.7 billion across four markets in 2022."
+  suffix: "vendor-commissioned"
+
+- key: customers_never_return
+  value: "42%"
+  scope: "consumers after a failed payment"
+  provenance: vendor_commissioned
+  attribution: "Oxford Economics for Checkout.com"
+  approved_text: "42 percent of consumers say they would never return to a merchant after a failed payment."
+  suffix: "vendor-commissioned"
+
+- key: uk_app_scams_2024
+  value: "GBP 450.7M"
+  scope: "UK authorised push payment losses, 2024"
+  provenance: independent
+  attribution: "UK Finance and the Payment Systems Regulator"
+  approved_text: "UK authorised push payment losses were 450.7 million pounds in 2024, with investment fraud up 34 percent."
+  suffix: ""
+
+- key: upi_fraud_fy24
+  value: "INR 1,087 crore"
+  scope: "UPI fraud, FY24, 13.42 lakh cases"
+  provenance: independent
+  attribution: "Ministry of Finance, Lok Sabha reply"
+  approved_text: "UPI fraud in FY24 totalled 1,087 crore rupees across 13.42 lakh reported cases."
+  suffix: ""
+
+- key: rbi_digital_payment_fraud
+  value: "13,516 cases"
+  scope: "RBI reported digital payment fraud, FY2024-25"
+  provenance: independent
+  attribution: "Reserve Bank of India Annual Report FY2024-25"
+  approved_text: "The Reserve Bank recorded 13,516 digital payment fraud cases in FY2024-25, 56.5 percent of all reported banking frauds."
+  suffix: ""
+
+- key: synthetic_identity_share
+  value: "29%"
+  scope: "synthetic identity as a share of identity fraud"
+  provenance: independent
+  attribution: "The Payments Association"
+  approved_text: "Synthetic identity accounts for 29 percent of identity fraud."
+  suffix: ""
+
+- key: arup_deepfake_loss
+  value: "$25.6M"
+  scope: "single deepfake-enabled transfer sequence, Hong Kong, January 2024"
+  provenance: independent
+  attribution: "Arup incident disclosure"
+  approved_text: "One deepfake video call moved 25.6 million dollars across fifteen transfers in a single day."
+  suffix: ""
+
+- key: ic3_bec_2024
+  value: "$2.77B"
+  scope: "US business email compromise losses, 2024"
+  provenance: independent
+  attribution: "FBI Internet Crime Complaint Center"
+  approved_text: "Business email compromise cost 2.77 billion dollars across 21,442 US incidents in 2024."
+  suffix: ""
+
+- key: de39_soft_decline_share
+  value: "~76%"
+  scope: "DE39 codes 05 and 51 as a share of all declines, global"
+  provenance: independent
+  attribution: "Visa Global Declines"
+  approved_text: "Do-not-honor and insufficient-funds together account for roughly 76 percent of all card declines."
+  suffix: ""
+
+- key: de39_05_india_skew
+  value: "34%"
+  scope: "DE39 code 05 share of declines, India"
+  provenance: independent
+  attribution: "Visa Global Declines"
+  approved_text: "The do-not-honor share is regionally skewed: about 10 percent of declines in the US against 34 percent in India."
+  suffix: ""
+
+- key: approval_rate_cnp
+  value: "~85%"
+  scope: "card-not-present approval rate"
+  provenance: independent
+  attribution: "Visa and Mastercard published acceptance data"
+  approved_text: "Card-not-present approval runs near 85 percent against roughly 95 percent card-present."
+  suffix: ""
+
+- key: threeds_frictionless_share
+  value: "80-85%"
+  scope: "3-D Secure 2.x frictionless share in well-configured deployments"
+  provenance: independent
+  attribution: "EMVCo 3DS 2.x deployment data"
+  approved_text: "Between 80 and 85 percent of 3-D Secure 2.x authentications complete in the frictionless lane."
+  suffix: ""
+
+- key: cross_border_sca_gap
+  value: "~10x"
+  scope: "cross-border CNP fraud share versus domestic"
+  provenance: independent
+  attribution: "ECB/EBA payment fraud report and UK Finance"
+  approved_text: "Cross-border card-not-present fraud runs about ten times the domestic share, and 75 percent of UK e-commerce CNP fraud occurs at non-UK merchants."
+  suffix: ""
+
+- key: psd2_tra_thresholds
+  value: "13 / 6 / 1 bps"
+  scope: "PSD2 transaction risk analysis exemption thresholds"
+  provenance: independent
+  attribution: "RTS (EU) 2018/389 Article 18"
+  approved_text: "The transaction risk analysis exemption allows 100 euro at 13 basis points, 250 euro at 6, 500 euro at 1, and mandates strong authentication above that."
+  suffix: ""
+
+- key: sepa_instant_sla
+  value: "10 seconds"
+  scope: "SEPA Instant settlement service level"
+  provenance: independent
+  attribution: "EPC scheme rulebook and Instant Payments Regulation 2024/886"
+  approved_text: "SEPA Instant settles in ten seconds and the 100,000 euro cap was removed by the Instant Payments Regulation."
+  suffix: ""
+
+- key: benchmark_prevalence
+  value: "0.13% - 3.5%"
+  scope: "public fraud benchmark prevalence"
+  provenance: independent
+  attribution: "PaySim, ULB, BankSim and IEEE-CIS dataset documentation"
+  approved_text: "Public fraud benchmarks range from 0.13 percent prevalence on PaySim to about 3.5 percent on IEEE-CIS."
+  suffix: ""
+
+- key: behavioural_degradation_range
+  value: "24-100x"
+  scope: "row-independent tabular generators"
+  provenance: independent
+  attribution: "arXiv:2604.13125 (2026), not yet independently replicated"
+  approved_text: "A 2026 benchmark shows row-independent generators degrade behavioural fraud signal 24 to 100 times while train-synthetic-test-real AUROC stays near baseline."
+  suffix: "single study, not yet replicated"
+
+- key: benford_chi2_critical
+  value: "15.507"
+  scope: "first-digit chi-square critical value, 8 degrees of freedom, alpha 0.05"
+  provenance: independent
+  attribution: "standard chi-square distribution"
+  approved_text: "The first-digit chi-square critical value is 15.507 at eight degrees of freedom and alpha 0.05."
+  suffix: ""
+
+- key: benford_mad_bands
+  value: "0.006 / 0.012 / 0.015"
+  scope: "Nigrini mean absolute deviation conformity bands"
+  provenance: independent
+  attribution: "Nigrini, Benford's Law"
+  approved_text: "Nigrini calls a mean absolute deviation below 0.006 close conformity, up to 0.012 acceptable, and above 0.015 nonconforming."
+  suffix: ""
+
+- key: gadbench_tree_over_gnn
+  value: "+12.9% AUPRC"
+  scope: "boosted trees on neighbour-aggregated features versus the best GNN"
+  provenance: independent
+  attribution: "GADBench, NeurIPS 2023"
+  approved_text: "A graph anomaly benchmark found boosted trees on neighbour-aggregated features beat the best graph neural network by 2.0 points of AUROC and 12.9 percent of AUPRC."
+  suffix: ""
+
+- key: production_fp_tp_ratio
+  value: "~13:1"
+  scope: "production fraud system false positives per true positive"
+  provenance: independent
+  attribution: "Capital One patent filing (13.01:1)"
+  approved_text: "Production fraud systems run near thirteen false positives for every true positive."
+  suffix: ""
+
+- key: merchant_order_rejection
+  value: "6%"
+  scope: "e-commerce orders rejected, of which 2-10 percent are legitimate"
+  provenance: independent
+  attribution: "Merchant Risk Council 2024 benchmark"
+  approved_text: "Merchants reject about 6 percent of e-commerce orders, and between 2 and 10 percent of those rejections are legitimate customers."
+  suffix: ""
+
+- key: roc_vs_pr_illustration
+  value: "0.957 vs 0.708"
+  scope: "ULB credit card dataset, ROC-AUC against PR-AUC"
+  provenance: independent
+  attribution: "ULB credit card fraud dataset"
+  approved_text: "On the ULB dataset the same model scores 0.957 ROC-AUC and 0.708 PR-AUC, which is why PayLoop never leads with ROC."
+  suffix: ""
+
+- key: hyperloglog_cost
+  value: "12 KB, 0.81%"
+  scope: "HyperLogLog counter memory and standard error"
+  provenance: independent
+  attribution: "Redis HyperLogLog documentation"
+  approved_text: "A HyperLogLog counter costs 12 kilobytes at roughly 0.81 percent standard error."
+  suffix: ""
+
+- key: mastercard_di_latency
+  value: "<50 ms"
+  scope: "Mastercard Decision Intelligence scoring latency"
+  provenance: vendor
+  attribution: "Mastercard"
+  approved_text: "Mastercard scores Decision Intelligence in under 50 milliseconds."
+  suffix: "vendor-reported"
+
+- key: visa_aa_prevented
+  value: "$25-26B"
+  scope: "fraud prevented by Visa Advanced Authorization"
+  provenance: vendor
+  attribution: "Visa press release"
+  approved_text: "Visa reports 25 to 26 billion dollars of fraud prevented by Advanced Authorization."
+  suffix: "vendor-reported"
+
+- key: blind_holdout
+  value: "V07 + 10% entity cohort"
+  scope: "PayLoop run 2026-08-31-final"
+  provenance: independent
+  attribution: "this repository"
+  approved_text: "One attack family and one entity cohort, neither of which enters any training pool."
+  suffix: ""
+
+- key: coverage_split
+  value: "8 modules, 12 classes, 12 of 32 vectors"
+  scope: "PayLoop injector coverage"
+  provenance: independent
+  attribution: "this repository"
+  approved_text: "Eight injector modules, twelve injector classes, covering twelve of thirty-two vectors."
+  suffix: ""
+
+- key: registry_status_split
+  value: "22 / 5 / 5"
+  scope: "PayLoop registry status distribution"
+  provenance: independent
+  attribution: "this repository"
+  approved_text: "Twenty-two vectors are documented, five emerging, five speculative."
+  suffix: ""
+
+- key: gnn_kill_bar
+  value: "0.03"
+  scope: "absolute PR-AUC lift required to keep the graph channel"
+  provenance: independent
+  attribution: "this repository"
+  approved_text: "The graph channel stays in the ensemble only if it adds three absolute PR-AUC points, not three percent."
+  suffix: ""
+
+- key: ladder_no_autonomous_block
+  value: "0.90"
+  scope: "PayLoop mitigation ladder"
+  provenance: independent
+  attribution: "this repository"
+  approved_text: "No autonomous block occurs below 0.90, and the top band routes to a human analyst queue rather than a silent decline."
+  suffix: ""
