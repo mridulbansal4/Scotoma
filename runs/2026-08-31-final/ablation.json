@@ -1,0 +1,132 @@
+{
+  "behavioral_max": 10.0,
+  "composite_behavioral": 20.0,
+  "fit_rows": 50000,
+  "generator": "GaussianCopulaSynthesizer",
+  "layers": {
+    "adversarial": {
+      "auc_floor": 0.4863,
+      "discriminator_auc": 0.9599,
+      "passed": false
+    },
+    "behavioral": {
+      "composite": 20.0,
+      "graph_motif": 4.3385,
+      "iet_autocorr": 20.0,
+      "iet_autocorr_batch": -0.1192,
+      "iet_autocorr_reference": 0.0847,
+      "passed": false,
+      "velocity_device_id": 1.4926,
+      "velocity_merchant_id": 1.1349,
+      "velocity_pan_token": 1.6907
+    },
+    "joint": {
+      "cramers_v_max_delta": 0.5444,
+      "passed": false,
+      "pcd": 0.0442
+    },
+    "marginal": {
+      "benford_chi2": 35.9753,
+      "benford_mad": 0.00756,
+      "ks_column_pass_frac": 0.875,
+      "ks_worst_statistic": 0.197,
+      "passed": false
+    },
+    "privacy": {
+      "mia_auc": 0.5023,
+      "min_dcr": 0.001537,
+      "passed": true
+    },
+    "utility": {
+      "passed": false,
+      "trtr_pr_auc": 0.1373,
+      "tstr_pr_auc": 0.0831,
+      "tstr_ratio": 0.6054
+    }
+  },
+  "marginal_shares": {
+    "currency": {
+      "batch_top": {
+        "EUR": 0.0995,
+        "GBP": 0.0716,
+        "INR": 0.6093,
+        "USD": 0.1446
+      },
+      "max_abs_difference": 0.013,
+      "reference_top": {
+        "EUR": 0.0864,
+        "GBP": 0.0667,
+        "INR": 0.62,
+        "USD": 0.1459
+      }
+    },
+    "decline_rate_by_rail": {
+      "batch": {
+        "ACH": 0.0822,
+        "AGENTIC": 0.081,
+        "CARD_CNP": 0.0775,
+        "CARD_CP": 0.0798,
+        "SEPA_INST": 0.0674,
+        "UPI": 0.0753
+      },
+      "reference": {
+        "ACH": 0.0198,
+        "AGENTIC": 0.048,
+        "CARD_CNP": 0.1536,
+        "CARD_CP": 0.0511,
+        "SEPA_INST": 0.0286,
+        "UPI": 0.0581
+      }
+    },
+    "mcc": {
+      "batch_top": {
+        "5732": 0.0296,
+        "5999": 0.0285,
+        "7372": 0.0291,
+        "__missing__": 0.4571
+      },
+      "max_abs_difference": 0.006,
+      "reference_top": {
+        "5411": 0.0298,
+        "5967": 0.0303,
+        "7372": 0.0296,
+        "__missing__": 0.4631
+      }
+    },
+    "rail": {
+      "batch_top": {
+        "ACH": 0.1091,
+        "CARD_CNP": 0.3143,
+        "CARD_CP": 0.2287,
+        "UPI": 0.2423
+      },
+      "max_abs_difference": 0.0059,
+      "reference_top": {
+        "ACH": 0.1146,
+        "CARD_CNP": 0.3121,
+        "CARD_CP": 0.2247,
+        "UPI": 0.2483
+      }
+    },
+    "response_code": {
+      "batch_top": {
+        "00": 0.9224,
+        "05": 0.0308,
+        "51": 0.027,
+        "54": 0.0074
+      },
+      "max_abs_difference": 0.0023,
+      "reference_top": {
+        "00": 0.9201,
+        "05": 0.0312,
+        "51": 0.029,
+        "54": 0.0081
+      }
+    }
+  },
+  "passed": false,
+  "sample_rows": 50000,
+  "shadow_failure": true,
+  "shadow_layer": "marginal",
+  "tstr_min_ratio": 0.9
+}

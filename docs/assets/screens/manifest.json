@@ -1,0 +1,92 @@
+[
+  {
+    "route": "/atlas",
+    "name": "atlas",
+    "file": "C:\\Projects\\Mastercard_Gff\\payloop\\docs\\assets\\screens\\atlas.png",
+    "kb": 723,
+    "status": 200,
+    "chars": 3136,
+    "ok": true
+  },
+  {
+    "route": "/atlas (vector-detail)",
+    "name": "atlas--vector-detail",
+    "file": "C:\\Projects\\Mastercard_Gff\\payloop\\docs\\assets\\screens\\atlas--vector-detail.png",
+    "kb": 349,
+    "status": 200,
+    "chars": 3136,
+    "ok": true
+  },
+  {
+    "route": "/fidelity",
+    "name": "fidelity",
+    "file": "C:\\Projects\\Mastercard_Gff\\payloop\\docs\\assets\\screens\\fidelity.png",
+    "kb": 1154,
+    "status": 200,
+    "chars": 3420,
+    "ok": true
+  },
+  {
+    "route": "/fidelity (ablation)",
+    "name": "fidelity--ablation",
+    "file": "C:\\Projects\\Mastercard_Gff\\payloop\\docs\\assets\\screens\\fidelity--ablation.png",
+    "kb": 943,
+    "status": 200,
+    "chars": 3420,
+    "ok": true
+  },
+  {
+    "route": "/loop",
+    "name": "loop",
+    "file": "C:\\Projects\\Mastercard_Gff\\payloop\\docs\\assets\\screens\\loop.png",
+    "kb": 494,
+    "status": 200,
+    "chars": 2035,
+    "ok": true
+  },
+  {
+    "route": "/loop (scope-network)",
+    "name": "loop--scope-network",
+    "file": "C:\\Projects\\Mastercard_Gff\\payloop\\docs\\assets\\screens\\loop--scope-network.png",
+    "kb": 361,
+    "status": 200,
+    "chars": 2035,
+    "ok": true
+  },
+  {
+    "route": "/redteam",
+    "name": "redteam",
+    "file": "C:\\Projects\\Mastercard_Gff\\payloop\\docs\\assets\\screens\\redteam.png",
+    "kb": 751,
+    "status": 200,
+    "chars": 1928,
+    "ok": true
+  },
+  {
+    "route": "/redteam (paused)",
+    "name": "redteam--paused",
+    "file": "C:\\Projects\\Mastercard_Gff\\payloop\\docs\\assets\\screens\\redteam--paused.png",
+    "kb": 756,
+    "status": 200,
+    "chars": 1928,
+    "ok": true
+  },
+  {
+    "route": "/soc",
+    "name": "soc",
+    "file": "C:\\Projects\\Mastercard_Gff\\payloop\\docs\\assets\\screens\\soc.png",
+    "kb": 705,
+    "status": 200,
+    "chars": 23903,
+    "ok": true
+  },
+  {
+    "route": "/soc (threshold-moved)",
+    "name": "soc--threshold-moved",
+    "file": "C:\\Projects\\Mastercard_Gff\\payloop\\docs\\assets\\screens\\soc--threshold-moved.png",
+    "kb": 705,
+    "status": 200,
+    "chars": 23903,
+    "ok": true
+  }
+]
