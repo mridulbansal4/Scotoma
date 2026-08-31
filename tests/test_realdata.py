@@ -127,3 +127,46 @@ def test_velocity_excludes_the_current_row(partitions) -> None:
     matrix = build_features(frame, include_absent=False)
     first_rows = frame.reset_index(drop=True).groupby("pan_token", sort=False).head(1).index
     assert (matrix.loc[first_rows, "cnt_pan_token_7d"] == 0).all()
+
+
+def test_floor_reference_returns_the_real_partition(tmp_path) -> None:
+    """The caller must branch on `is not None`. `x or y` raises on a DataFrame, which is
+    how the first wiring of this broke a full loop run at bootstrap."""
+    from backend.loop import controller
+    from backend.runtime.config import PayLoopConfig
+
+    frame = sparkov.to_ces(_sparkov_frame(80, 9, "2019-01-01"))
+    real_dir = tmp_path / "real"
+    real_dir.mkdir()
+    frame.to_parquet(real_dir / "floor.parquet", index=False)
+
+    config = PayLoopConfig(fidelity_floor_source="real", real_data_dir=str(real_dir))
+    loaded = controller._real_floor_reference(config)
+    assert loaded is not None
+    assert len(loaded) == len(frame)
+    assert {"event_ts", "amount", "is_fraud", "pan_token", "mcc"} <= set(loaded.columns)
+
+
+def test_bootstrap_does_not_use_truthiness_on_the_floor_frame() -> None:
+    """Guards the exact defect: `_real_floor_reference(config) or reference` raises."""
+    import inspect
+
+    from backend.loop import controller
+
+    source = inspect.getsource(controller.bootstrap)
+    assert "_real_floor_reference(config) or" not in source
+
+
+def test_floor_reference_falls_back_when_real_data_is_absent(tmp_path) -> None:
+    from backend.loop import controller
+    from backend.runtime.config import PayLoopConfig
+
+    config = PayLoopConfig(fidelity_floor_source="real", real_data_dir=str(tmp_path / "nope"))
+    assert controller._real_floor_reference(config) is None
+
+
+def test_floor_reference_is_off_by_default() -> None:
+    from backend.loop import controller
+    from backend.runtime.config import PayLoopConfig
+
+    assert controller._real_floor_reference(PayLoopConfig()) is None

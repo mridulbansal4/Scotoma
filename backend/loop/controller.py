@@ -249,7 +249,10 @@ def bootstrap(config: PayLoopConfig) -> LoopContext:
     persist("edges", edges, mode="replace")
 
     reference, carrier = _split_reference_and_carrier(partition.pool_events)
-    reference = _real_floor_reference(config) or reference
+    # Explicit None check: a DataFrame in a boolean context raises rather than testing empty.
+    real_floor = _real_floor_reference(config)
+    if real_floor is not None:
+        reference = real_floor
     evaluation_legit = _evaluation_window(partition.pool_events)
 
     context_features = build_feature_context(population, partition.pool_events)
