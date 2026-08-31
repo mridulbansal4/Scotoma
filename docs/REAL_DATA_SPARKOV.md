@@ -43,7 +43,7 @@ rows, 1,852,394 total, matching the documented size.
 | `backend/realdata/featurize.py` | The 69 features Sparkov can actually support |
 | `backend/realdata/train.py` | Channel A fit, Channel C fit, calibration metrics, weights export |
 | `scripts/sparkov_pipeline.py` | `prepare` / `train` / `tstr` |
-| `tests/test_realdata.py` | 9 tests |
+| `tests/test_realdata.py` | 13 tests |
 | `backend/loop/controller.py` | `_real_floor_reference()`, the gate wiring |
 | `weights/` | The shipped bundle, including `MODEL_CARD.md` |
 
@@ -212,8 +212,9 @@ is held to the same conventions as the rest of the tree.
 - **Synthetic-to-real TSTR.** The baseline half is measured; the synthetic-trained half
   needs a feature bridge between the two corpora.
 - **Four graph features**, see section 4.
-- **A loop run against the real floor.** The wiring is in and verified; the run itself is
-  the next thing to spend 45 minutes on.
+- **Density-normalised velocity comparison.** Section 11 shows the current ratio cannot
+  separate a realism defect from a population-density gap. Until that is normalised, the
+  real-floor composite is not a fidelity verdict.
 - `test_loop_completes_minimum_rounds` still fails, asserting 5 rounds where the last run
   was 3 for time. Unrelated to this work.
 
@@ -225,3 +226,68 @@ Channel A here has zero coverage of the agentic surface: V19 prompt injection, c
 mismatch, mandate-scope breach. No public corpus contains a Payment Mandate, an
 attestation or a cart hash, because the standards defining them are still arriving. Not
 fixable by picking a different dataset. Say it before a judge finds it.
+
+---
+
+## 11. The real-floor run, and what it actually showed
+
+The gate was run for real: `FIDELITY_FLOOR_SOURCE=real`, three rounds, the Sparkov
+`floor` partition as the reference. Artefacts preserved in `runs/2026-08-31-realfloor/`.
+
+**All three rounds were rejected.** Composite behavioural 13.20, 13.25, 13.33 against a
+threshold of 10.0.
+
+| Component | Round 0 | Reading |
+|---|---:|---|
+| `velocity_pan_token` | 48.97 | comparable, far out |
+| `velocity_merchant_id` | 83.62 | comparable, far out |
+| `graph_motif` | 5.28 | over, not catastrophic |
+| `iet_autocorr` | 1.40 | close to parity |
+| `device_id` | not comparable | Sparkov has no device column |
+
+### The velocity failure is population density, not realism
+
+Before reporting "our generator fails an independent fidelity check", measure why. On the
+same frames the gate used:
+
+| Corpus | Cards | Events per card per day | Inter-event-time std |
+|---|---:|---:|---:|
+| Sparkov `floor` | 939 | 2.6985 | 46,710 s |
+| Scotoma synthetic | 34,152 | 0.2966 | 457,590 s |
+
+**Each Sparkov card is roughly nine times busier than a Scotoma card.** Sparkov models 1,000
+customers over two years; Scotoma models tens of thousands over six months. Comparing
+inter-event-time spread across populations of such different density measures the density
+gap first and realism second.
+
+So the honest statement is not "the generator is unrealistic". It is: **the gate correctly
+detects that the two corpora describe different worlds, and the current ratio cannot
+separate that from a realism defect.** To make the number mean what the appendix wants it
+to mean, either match the generator's population density to the reference, or normalise
+the ratio by events per key per day. Neither is done.
+
+The autocorrelation result is the interesting one and it points the other way:
+`iet_autocorr` 1.40, with reference 0.0602 and batch 0.0843. The *shape* of within-card
+timing correlation is close. It is the scale that is off.
+
+### Two defects this run exposed
+
+Both were in project code that assumed the gate reference is always one of our own frames.
+
+1. **The behavioural layer scored absent columns as structural failures.** `device_id`,
+   `ip` and `agent_id` do not exist in Sparkov, so `_iet_std_by_key` returned NaN and each
+   was assigned the ceiling. That pinned the composite at 20.0 and hid every real ratio
+   beside it. Absent keys are now skipped and reported as `not_comparable_keys`.
+2. **The ablation read `frame["rail"]` unguarded** and raised `KeyError` inside
+   `finalise()`, after three rounds had already run. It now returns an empty mapping when
+   the column is absent rather than inventing an all-approved rail.
+
+A third defect was mine: `_real_floor_reference(config) or reference` raises, because a
+DataFrame in a boolean context is ambiguous. The unit test missed it by calling the
+function directly instead of the substitution expression.
+
+### What ships
+
+`runs/2026-08-31-final` uses the synthetic reference, which is the default and the
+configuration the five screens render. The real-floor run is preserved beside it as an
+experiment with its own note, not as the shipped artefact set.

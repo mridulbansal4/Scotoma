@@ -1,0 +1,5 @@
+{
+  "enabled": false,
+  "kill_threshold": 0.03,
+  "measured_lift_pr_auc": -0.4467
+}

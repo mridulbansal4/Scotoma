@@ -1,0 +1,93 @@
+{
+  "behavioral_max": 10.0,
+  "composite_behavioral": 20.357,
+  "fit_rows": 50000,
+  "generator": "GaussianCopulaSynthesizer",
+  "layers": {
+    "adversarial": {
+      "passed": false
+    },
+    "behavioral": {
+      "composite": 20.357,
+      "graph_motif": 1.0897,
+      "iet_autocorr": 20.0,
+      "iet_autocorr_batch": -0.1192,
+      "iet_autocorr_reference": 0.0602,
+      "not_comparable_keys": "device_id",
+      "passed": false,
+      "velocity_merchant_id": 91.9706,
+      "velocity_pan_token": 85.6801
+    },
+    "joint": {
+      "passed": false
+    },
+    "marginal": {
+      "passed": false
+    },
+    "privacy": {
+      "passed": false
+    },
+    "utility": {
+      "passed": false
+    }
+  },
+  "marginal_shares": {
+    "decline_rate_by_rail": {
+      "batch": {
+        "ACH": 0.0822,
+        "AGENTIC": 0.081,
+        "CARD_CNP": 0.0775,
+        "CARD_CP": 0.0798,
+        "SEPA_INST": 0.0674,
+        "UPI": 0.0753
+      },
+      "reference": {
+        "CARD_CNP": 0.0
+      }
+    },
+    "mcc": {
+      "batch_top": {
+        "5732": 0.0296,
+        "5999": 0.0285,
+        "7372": 0.0291,
+        "__missing__": 0.4571
+      },
+      "max_abs_difference": 0.1664,
+      "reference_top": {
+        "5399": 0.1102,
+        "5411": 0.1293,
+        "5541": 0.1005,
+        "5651": 0.1664
+      }
+    },
+    "rail": {
+      "batch_top": {
+        "ACH": 0.1091,
+        "CARD_CNP": 0.3143,
+        "CARD_CP": 0.2287,
+        "UPI": 0.2423
+      },
+      "max_abs_difference": 0.6857,
+      "reference_top": {
+        "CARD_CNP": 1.0
+      }
+    },
+    "response_code": {
+      "batch_top": {
+        "00": 0.9224,
+        "05": 0.0308,
+        "51": 0.027,
+        "54": 0.0074
+      },
+      "max_abs_difference": 1.0,
+      "reference_top": {
+        "__missing__": 1.0
+      }
+    }
+  },
+  "passed": false,
+  "sample_rows": 50000,
+  "shadow_failure": true,
+  "shadow_layer": "marginal",
+  "tstr_min_ratio": 0.9
+}

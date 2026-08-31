@@ -1,0 +1,22 @@
+{
+  "budget_ms": 50.0,
+  "feature_lookup": {
+    "reason": "redis unreachable: TimeoutError",
+    "source": "unavailable",
+    "target_ms": 5.0
+  },
+  "host": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel, Python 3.11.9",
+  "iterations": 10000,
+  "p50_ms": 0.0357,
+  "p95_ms": 0.0592,
+  "p99_ms": 0.1147,
+  "path": "ONNX single-row model scoring plus Platt calibration; excludes feature assembly and the feature-store lookup, which are reported separately",
+  "source": "measured",
+  "targets": {
+    "feature_lookup_ms": 5.0,
+    "hash_compare_ms": 0.05,
+    "inline_total_ms": 15.0,
+    "model_ms": 2.0
+  },
+  "warmup": 500
+}

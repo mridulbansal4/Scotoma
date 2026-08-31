@@ -1,0 +1,109 @@
+{
+  "rounds": [
+    {
+      "composite_behavioral": 13.1956,
+      "layers": {
+        "adversarial": {
+          "passed": false
+        },
+        "behavioral": {
+          "composite": 13.1956,
+          "graph_motif": 5.2833,
+          "iet_autocorr": 1.4014,
+          "iet_autocorr_batch": 0.0843,
+          "iet_autocorr_reference": 0.0602,
+          "not_comparable_keys": "device_id",
+          "passed": false,
+          "velocity_merchant_id": 83.6222,
+          "velocity_pan_token": 48.9691
+        },
+        "joint": {
+          "passed": false
+        },
+        "marginal": {
+          "passed": false
+        },
+        "privacy": {
+          "passed": false
+        },
+        "utility": {
+          "passed": false
+        }
+      },
+      "passed": false,
+      "round": 0,
+      "shadow_failure": true,
+      "shadow_layer": "marginal"
+    },
+    {
+      "composite_behavioral": 13.2483,
+      "layers": {
+        "adversarial": {
+          "passed": false
+        },
+        "behavioral": {
+          "composite": 13.2483,
+          "graph_motif": 5.2406,
+          "iet_autocorr": 1.4528,
+          "iet_autocorr_batch": 0.0874,
+          "iet_autocorr_reference": 0.0602,
+          "not_comparable_keys": "device_id",
+          "passed": false,
+          "velocity_merchant_id": 82.4619,
+          "velocity_pan_token": 49.0681
+        },
+        "joint": {
+          "passed": false
+        },
+        "marginal": {
+          "passed": false
+        },
+        "privacy": {
+          "passed": false
+        },
+        "utility": {
+          "passed": false
+        }
+      },
+      "passed": false,
+      "round": 1,
+      "shadow_failure": true,
+      "shadow_layer": "joint"
+    },
+    {
+      "composite_behavioral": 13.3299,
+      "layers": {
+        "adversarial": {
+          "passed": false
+        },
+        "behavioral": {
+          "composite": 13.3299,
+          "graph_motif": 5.3304,
+          "iet_autocorr": 1.4177,
+          "iet_autocorr_batch": 0.0853,
+          "iet_autocorr_reference": 0.0602,
+          "not_comparable_keys": "device_id",
+          "passed": false,
+          "velocity_merchant_id": 83.282,
+          "velocity_pan_token": 50.1656
+        },
+        "joint": {
+          "passed": false
+        },
+        "marginal": {
+          "passed": false
+        },
+        "privacy": {
+          "passed": false
+        },
+        "utility": {
+          "passed": false
+        }
+      },
+      "passed": false,
+      "round": 2,
+      "shadow_failure": true,
+      "shadow_layer": "adversarial"
+    }
+  ]
+}

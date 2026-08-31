@@ -1,0 +1,81 @@
+{
+  "calibration": {
+    "brier_calibrated": 0.000803,
+    "brier_uncalibrated": 0.001796,
+    "reliability": [
+      {
+        "bin_lower": 0.0,
+        "bin_upper": 0.1,
+        "count": 238582,
+        "mean_predicted": 0.0004565970908883479,
+        "observed_rate": 0.0005071631556446002
+      },
+      {
+        "bin_lower": 0.1,
+        "bin_upper": 0.2,
+        "count": 57,
+        "mean_predicted": 0.1391722456103016,
+        "observed_rate": 0.08771929824561403
+      },
+      {
+        "bin_lower": 0.2,
+        "bin_upper": 0.30000000000000004,
+        "count": 47,
+        "mean_predicted": 0.2517296268383619,
+        "observed_rate": 0.1276595744680851
+      },
+      {
+        "bin_lower": 0.30000000000000004,
+        "bin_upper": 0.4,
+        "count": 30,
+        "mean_predicted": 0.3523157815295385,
+        "observed_rate": 0.1
+      },
+      {
+        "bin_lower": 0.4,
+        "bin_upper": 0.5,
+        "count": 43,
+        "mean_predicted": 0.4608080818930964,
+        "observed_rate": 0.23255813953488372
+      },
+      {
+        "bin_lower": 0.5,
+        "bin_upper": 0.6000000000000001,
+        "count": 42,
+        "mean_predicted": 0.5477473149377918,
+        "observed_rate": 0.3333333333333333
+      },
+      {
+        "bin_lower": 0.6000000000000001,
+        "bin_upper": 0.7000000000000001,
+        "count": 105,
+        "mean_predicted": 0.6649616695931564,
+        "observed_rate": 0.6476190476190476
+      },
+      {
+        "bin_lower": 0.7000000000000001,
+        "bin_upper": 0.8,
+        "count": 105,
+        "mean_predicted": 0.7056718829650056,
+        "observed_rate": 0.9428571428571428
+      }
+    ]
+  },
+  "fp_tp_ratio": 0.05,
+  "precision_at_k": 0.6808,
+  "recall": {
+    "V01": 0.7922,
+    "V02": 0.554,
+    "V05": 0.9667,
+    "V06": 0.9334,
+    "V07": 0.1553,
+    "V18": 0.9533,
+    "V19": 0.0093,
+    "V20": 0.0374,
+    "V21": 0.1963,
+    "V22": 0.0166,
+    "V28": 0.505,
+    "V31": 0.4321
+  },
+  "recall_at_95_precision": 0.7127
+}
