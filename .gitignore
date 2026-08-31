@@ -25,6 +25,9 @@ npm-debug.log*
 *.docx
 ~$*
 
+# local demo/presentation notes
+DEMO_SCRIPT.md
+
 # tooling / editor
 .claude/
 .serena/
