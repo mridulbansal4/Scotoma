@@ -1,6 +1,6 @@
 'use client';
 
-import { useMotionValue, useSpring, useMotionTemplate, motion } from 'motion/react';
+import { useMotionValue, useSpring, useMotionTemplate, motion, useReducedMotion } from 'motion/react';
 import { useRef, MouseEvent, ReactNode, useState } from 'react';
 
 export function InteractiveHeroBox({
@@ -16,9 +16,12 @@ export function InteractiveHeroBox({
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
-  // Snappy spring tracking for immediate natural spotlight movement
-  const smoothX = useSpring(mouseX, { stiffness: 350, damping: 28 });
-  const smoothY = useSpring(mouseY, { stiffness: 350, damping: 28 });
+  // Snappy spring tracking for immediate natural spotlight movement (Apple Design spec)
+  const springConfig = { bounce: 0, duration: 0.3 };
+  const smoothX = useSpring(mouseX, springConfig);
+  const smoothY = useSpring(mouseY, springConfig);
+
+  const shouldReduceMotion = useReducedMotion();
 
   const [isHovered, setIsHovered] = useState(false);
 
@@ -73,14 +76,16 @@ export function InteractiveHeroBox({
         className="pointer-events-none absolute -top-20 -right-20 h-80 w-80 rounded-full bg-gradient-to-br from-indigo-300/30 via-blue-200/20 to-transparent blur-3xl"
       />
 
-      {/* The instant cursor-following spotlight overlay */}
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-150"
-        style={{
-          background,
-          opacity: isHovered ? 1 : 0,
-        }}
-      />
+      {/* The instant cursor-following spotlight overlay, disabled for reduced motion */}
+      {!shouldReduceMotion && (
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-150"
+          style={{
+            background,
+            opacity: isHovered ? 1 : 0,
+          }}
+        />
+      )}
 
       <div className="flex flex-col items-start max-w-4xl relative z-10">
         {children}
