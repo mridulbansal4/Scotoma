@@ -1,0 +1,56 @@
+{
+  "motif_census": {
+    "accounts": 515080,
+    "edges": 5078345,
+    "laundering": {
+      "label": "laundering",
+      "edges": 5177,
+      "unique_sources": 3376,
+      "unique_targets": 3984,
+      "mean_src_out_degree": 11741.025,
+      "mean_dst_in_degree": 21.028,
+      "max_src_out_degree": 168672,
+      "max_dst_in_degree": 159,
+      "reciprocated_share": 0.08982,
+      "self_loop_share": 0.00212
+    },
+    "legitimate": {
+      "label": "legitimate",
+      "edges": 5073168,
+      "unique_sources": 496871,
+      "unique_targets": 420585,
+      "mean_src_out_degree": 8253.273,
+      "mean_dst_in_degree": 26.938,
+      "max_src_out_degree": 168672,
+      "max_dst_in_degree": 1084,
+      "reciprocated_share": 0.11823,
+      "self_loop_share": 0.11653
+    }
+  },
+  "channel_b_scoping": {
+    "corpus": "ibm_aml_hi_small",
+    "is_observed_data": false,
+    "edges": 5078345,
+    "train_rows": 3554841,
+    "test_rows": 1523504,
+    "test_base_rate": 0.001523,
+    "graph_only_pr_auc": 0.0089,
+    "graph_only_roc_auc": 0.8205,
+    "lift_over_base_rate": 0.0074,
+    "lift_bar": 0.03,
+    "clears_lift_bar": false,
+    "feature_importance": {
+      "amount_usd_log": 5434,
+      "dst_out_degree": 2260,
+      "src_in_degree": 2068,
+      "src_fanout_ratio": 1912,
+      "src_out_degree": 1872,
+      "dst_fanin_ratio": 1761,
+      "dst_in_degree": 1650,
+      "src_unique_targets": 820,
+      "dst_unique_sources": 737,
+      "is_self_loop": 86,
+      "is_reciprocated": 0
+    }
+  }
+}

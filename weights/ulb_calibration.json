@@ -1,0 +1,183 @@
+{
+  "corpus": "ulb_creditcardfraud",
+  "is_observed_data": true,
+  "rows": 284807,
+  "prevalence": 0.001727,
+  "train_rows": 170884,
+  "validation_rows": 56961,
+  "validation_positives": 57,
+  "test_rows": 56962,
+  "test_positives": 75,
+  "results": {
+    "uncalibrated": {
+      "method": "uncalibrated",
+      "pr_auc": 0.7366,
+      "roc_auc": 0.9043,
+      "brier": 0.000465,
+      "expected_calibration_error": 0.000439,
+      "worst_populated_bin": 0.046,
+      "saturated_fraction": 0.0,
+      "reliability": [
+        {
+          "bin_lower": 0.0,
+          "bin_upper": 0.1,
+          "mean_predicted": 2.7674445179051967e-05,
+          "observed_rate": 0.00036906854130052725,
+          "count": 56900
+        },
+        {
+          "bin_lower": 0.2,
+          "bin_upper": 0.30000000000000004,
+          "mean_predicted": 0.23971173016232272,
+          "observed_rate": 0.0,
+          "count": 1
+        },
+        {
+          "bin_lower": 0.4,
+          "bin_upper": 0.5,
+          "mean_predicted": 0.49392614487652914,
+          "observed_rate": 0.0,
+          "count": 1
+        },
+        {
+          "bin_lower": 0.5,
+          "bin_upper": 0.6000000000000001,
+          "mean_predicted": 0.5433684153905917,
+          "observed_rate": 1.0,
+          "count": 3
+        },
+        {
+          "bin_lower": 0.6000000000000001,
+          "bin_upper": 0.7000000000000001,
+          "mean_predicted": 0.6203603656373758,
+          "observed_rate": 0.0,
+          "count": 1
+        },
+        {
+          "bin_lower": 0.7000000000000001,
+          "bin_upper": 0.8,
+          "mean_predicted": 0.7635994463294684,
+          "observed_rate": 0.5,
+          "count": 2
+        },
+        {
+          "bin_lower": 0.8,
+          "bin_upper": 0.9,
+          "mean_predicted": 0.8513101525272154,
+          "observed_rate": 0.8333333333333334,
+          "count": 6
+        },
+        {
+          "bin_lower": 0.9,
+          "bin_upper": 1.0,
+          "mean_predicted": 0.9835240697046569,
+          "observed_rate": 0.9375,
+          "count": 48
+        }
+      ]
+    },
+    "sigmoid": {
+      "method": "sigmoid",
+      "pr_auc": 0.7366,
+      "roc_auc": 0.9043,
+      "brier": 0.00048,
+      "expected_calibration_error": 0.000172,
+      "worst_populated_bin": 0.0215,
+      "saturated_fraction": 0.0,
+      "reliability": [
+        {
+          "bin_lower": 0.0,
+          "bin_upper": 0.1,
+          "mean_predicted": 0.0002987761952260321,
+          "observed_rate": 0.00038662284941040013,
+          "count": 56903
+        },
+        {
+          "bin_lower": 0.1,
+          "bin_upper": 0.2,
+          "mean_predicted": 0.1623775649614151,
+          "observed_rate": 1.0,
+          "count": 2
+        },
+        {
+          "bin_lower": 0.2,
+          "bin_upper": 0.30000000000000004,
+          "mean_predicted": 0.2799552148996773,
+          "observed_rate": 0.0,
+          "count": 1
+        },
+        {
+          "bin_lower": 0.6000000000000001,
+          "bin_upper": 0.7000000000000001,
+          "mean_predicted": 0.6708377678614408,
+          "observed_rate": 0.5,
+          "count": 2
+        },
+        {
+          "bin_lower": 0.7000000000000001,
+          "bin_upper": 0.8,
+          "mean_predicted": 0.7972683091815815,
+          "observed_rate": 0.0,
+          "count": 1
+        },
+        {
+          "bin_lower": 0.8,
+          "bin_upper": 0.9,
+          "mean_predicted": 0.8435178268781393,
+          "observed_rate": 1.0,
+          "count": 4
+        },
+        {
+          "bin_lower": 0.9,
+          "bin_upper": 1.0,
+          "mean_predicted": 0.960295895379872,
+          "observed_rate": 0.9387755102040817,
+          "count": 49
+        }
+      ]
+    },
+    "isotonic": {
+      "method": "isotonic",
+      "pr_auc": 0.7115,
+      "roc_auc": 0.906,
+      "brier": 0.000466,
+      "expected_calibration_error": 0.000181,
+      "worst_populated_bin": 0.05,
+      "saturated_fraction": 0.0256,
+      "reliability": [
+        {
+          "bin_lower": 0.0,
+          "bin_upper": 0.1,
+          "mean_predicted": 0.00023544456660938977,
+          "observed_rate": 0.00036906205514841564,
+          "count": 56901
+        },
+        {
+          "bin_lower": 0.6000000000000001,
+          "bin_upper": 0.7000000000000001,
+          "mean_predicted": 0.6671718506734596,
+          "observed_rate": 0.7142857142857143,
+          "count": 14
+        },
+        {
+          "bin_lower": 0.8,
+          "bin_upper": 0.9,
+          "mean_predicted": 0.8492693569743647,
+          "observed_rate": 0.8571428571428571,
+          "count": 7
+        },
+        {
+          "bin_lower": 0.9,
+          "bin_upper": 1.0,
+          "mean_predicted": 1.0,
+          "observed_rate": 0.95,
+          "count": 40
+        }
+      ]
+    }
+  },
+  "platt_preserves_ranking": true,
+  "pr_auc_cost_of_isotonic": 0.0251,
+  "platt_better_on_populated_bins": true,
+  "isotonic_saturated_fraction": 0.0256
+}

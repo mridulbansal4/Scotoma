@@ -213,3 +213,88 @@ refits once per round plus once at init.
 2. The top calibration bin is under-confident on 480 rows.
 3. Four graph features are derivable and not built.
 4. Sparkov is simulated, see the banner at the top. Independent of Scotoma, not real.
+
+---
+
+## Appendix: the other two corpora
+
+Three corpora are now used. Only one trains a shipped model; the other two produce
+evidence.
+
+| Corpus | Rows | Observed or generated | Job here |
+|---|---:|---|---|
+| Sparkov `kartik2112/fraud-detection` | 1,852,394 | **generated** | trains Channel A and Channel C |
+| ULB `mlg-ulb/creditcardfraud` | 284,807 | **observed** | settles the calibrator choice |
+| IBM AML HI-Small `ealtman2019/...` | 5,078,345 | **generated** | scopes Channel B |
+
+### ULB: the calibrator ruling, measured
+
+The only genuinely observed transaction data in this project, at a real 0.173% base rate.
+Fitted once, calibrated two ways, both scored on the same untouched temporal test slice.
+
+| Method | PR-AUC | Brier | ECE | Worst populated bin | Scores pinned at 0 or 1 |
+|---|---:|---:|---:|---:|---:|
+| uncalibrated | 0.7366 | 0.000465 | 0.000439 | 0.0460 | 0.0000 |
+| **Platt (sigmoid)** | **0.7366** | 0.000480 | **0.000172** | **0.0215** | 0.0000 |
+| isotonic | 0.7115 | 0.000466 | 0.000181 | 0.0500 | 0.0256 |
+
+Platt wins on the two things that matter and the ruling holds:
+
+1. **It preserves ranking exactly.** Sigmoid is monotonic, so PR-AUC is identical to
+   uncalibrated. Isotonic costs **0.0251 PR-AUC**, which is real detection lost to
+   calibration.
+2. **It is better where the mass is.** Expected calibration error 0.000172 against
+   0.000181, and the worst well-populated bin 0.0215 against 0.0500.
+3. **Isotonic pins 2.56% of scores at exactly 0 or 1.** A posterior of 1.0 asserts
+   certainty, and the Elkan threshold has no way to price certainty.
+
+> **A methodological note, because the first version of this table said the opposite.**
+> The initial metric was an unweighted worst-bin gap. It made Platt look catastrophic at
+> 0.8376, on a bin holding **two events**, where the observed rate can only be 0.0 or 1.0.
+> That is noise reported as miscalibration, and it ranked the calibrators backwards.
+> Weighting by bin mass and requiring at least 30 events per bin reverses the conclusion.
+> The lesson generalises: at 0.17% prevalence almost every reliability bin is too thin to
+> read, and an unweighted calibration metric will mislead.
+
+### IBM AML: the Channel B negative result, measured
+
+515,080 accounts, 5,078,345 edges, 0.102% laundering, matching Altman et al.
+
+The question was whether account-graph structure justifies a graph channel at all. The
+cheapest thing that could work was measured: degree, reciprocity and normalised amount
+features into gradient boosting, split temporally. No embeddings, no neighbour sampling,
+no GNN.
+
+| Measure | Laundering | Legitimate |
+|---|---:|---:|
+| Edges | 5,177 | 5,073,168 |
+| Mean source out-degree | 11,741.02 | 8,253.27 |
+| Mean target in-degree | 21.03 | 26.94 |
+| Reciprocated share | 0.0898 | 0.1182 |
+
+| Result | Value |
+|---|---:|
+| Graph-only PR-AUC | 0.0089 |
+| Test base rate | 0.001523 |
+| **Lift over base rate** | **0.0074** |
+| Configured bar | 0.0300 |
+| **Clears the bar** | **No** |
+
+The aggregate structure genuinely differs: laundering sources are 1.42x higher out-degree.
+But that difference does not separate individual edges. The graph-only lift is **0.0074
+against a 0.03 bar, roughly four times short.**
+
+This is the scoping statement to make, and it is stronger than "we ran out of time":
+
+> Channel B was scoped against IBM AML HI-Small, the only public corpus with labelled
+> laundering motifs. A degree-and-reciprocity baseline reaches 0.0074 PR-AUC lift over the
+> base rate, against our own 0.03 bar. A graph neural network would have to deliver about
+> four times what simple structure gives before it clears the threshold we set ourselves.
+> We shipped Channels A and C, and we are publishing that number instead of a decorative
+> model with an unmeasured lift.
+
+Currency is normalised to USD before any amount feature. HI-Small is multi-currency, and
+summing dollars and bitcoin into one velocity total produces a figure that means nothing.
+
+Neither ULB nor IBM AML contributes weights. ULB's features are PCA components and cannot
+produce a readable reason code; IBM AML is scoping only.
