@@ -1,34 +1,37 @@
-# Sparkov partitions and the real-data Channel A fit
+# Sparkov partitions and the Channel A fit
 
-Status: **pipeline built and verified end to end on a shaped fixture. Not yet run on real
-Sparkov, because the dataset is not on this machine.** Everything below is code that
-exists and tests that pass. No number in the "results" sense is claimed yet.
+Status: **done. Downloaded, partitioned, trained, transferred, exported.** Every number
+below is measured on the full 1.85M-row corpus, not projected.
+
+> ### One correction before anything else
+>
+> **Sparkov is simulated data.** Kaggle's own listing subtitles it *"Simulated Credit Card
+> Transactions generated using Sparkov"*, a generator written by Brandon Harris. Appendix
+> A calls this a "real-data noise floor" and that phrasing is wrong.
+>
+> The value survives the correction, but the claim has to change. Sparkov is traffic from
+> a generator that is **not ours**, and that is what breaks the circularity: a fidelity
+> gate whose reference is Scotoma's own output is marking its own homework, while a gate
+> referenced against an independent generator is measuring something. Say **"an
+> independent generator's traffic"**. Never say "real transaction data".
+>
+> Of the appendix's three Tier 1 corpora, only ULB `creditcardfraud` is genuinely observed
+> transactions, and its features are PCA components. There is no public corpus that is
+> simultaneously real, feature-readable and card-not-present.
 
 ---
 
-## 1. What was blocked, and why
+## 1. Getting the data
 
-Sparkov is not downloaded here. There is no `kaggle` package in the venv and no
-`~/.kaggle/kaggle.json`. Kaggle requires an authenticated account to download
-`kartik2112/fraud-detection`, so this step needs you, not me.
-
-Rather than stop, the whole pipeline was built and proven against a Sparkov-shaped
-fixture. When the two CSVs land, three commands produce partitions, weights and a
-transfer number.
-
-### To unblock
-
-Either download `fraudTrain.csv` and `fraudTest.csv` from
-`kaggle.com/datasets/kartik2112/fraud-detection` by hand and drop them in
-`data/real/raw/`, or install the CLI and place your own API token:
+No Kaggle credential exists on this machine, but the download endpoint serves anonymously:
 
 ```bash
-.venv/Scripts/python.exe -m pip install kaggle
-# put your kaggle.json at C:\Users\<you>\.kaggle\kaggle.json yourself
-kaggle datasets download -d kartik2112/fraud-detection -p data/real/raw --unzip
+curl -sSL -o data/real/raw/sparkov.zip \
+  "https://www.kaggle.com/api/v1/datasets/download/kartik2112/fraud-detection"
 ```
 
-Do not paste the token into a chat. It is a credential; put the file in place yourself.
+202 MB zipped, 479 MB unpacked. `fraudTrain.csv` 1,296,675 rows, `fraudTest.csv` 555,719
+rows, 1,852,394 total, matching the documented size.
 
 ---
 
@@ -36,198 +39,189 @@ Do not paste the token into a chat. It is a credential; put the file in place yo
 
 | Path | Job |
 |---|---|
-| `backend/realdata/sparkov.py` | Sparkov CSV to internal CES columns, temporal partition, disjointness guard |
-| `backend/realdata/featurize.py` | The feature subset Sparkov can actually support |
-| `backend/realdata/train.py` | Channel A fit, honest calibration metrics, weights export |
-| `scripts/sparkov_pipeline.py` | `prepare` / `train` / `tstr` subcommands |
-| `tests/test_realdata.py` | 9 tests, all passing |
-
-Three commands:
+| `backend/realdata/sparkov.py` | CSV to internal CES columns, temporal partition, disjointness guard |
+| `backend/realdata/featurize.py` | The 69 features Sparkov can actually support |
+| `backend/realdata/train.py` | Channel A fit, Channel C fit, calibration metrics, weights export |
+| `scripts/sparkov_pipeline.py` | `prepare` / `train` / `tstr` |
+| `tests/test_realdata.py` | 9 tests |
+| `backend/loop/controller.py` | `_real_floor_reference()`, the gate wiring |
+| `weights/` | The shipped bundle, including `MODEL_CARD.md` |
 
 ```bash
-python scripts/sparkov_pipeline.py prepare   # writes calib/floor/blind parquet
-python scripts/sparkov_pipeline.py train     # fits Channel A, exports weights/
-python scripts/sparkov_pipeline.py tstr      # scores calib-trained model on blind
+python scripts/sparkov_pipeline.py prepare   # 13 s
+python scripts/sparkov_pipeline.py train     # 55 s including Channel C
+python scripts/sparkov_pipeline.py tstr      # 44 s
 ```
 
 ---
 
-## 3. The partition (A.4)
+## 3. The partition
 
-`fraudTrain.csv` is cut at 60% by time into `calib/` and `floor/`. `fraudTest.csv`
-becomes `blind/` in its entirety. Sparkov's own split is already temporal, so this
-preserves it and gives a holdout genuinely later than everything else.
+`fraudTrain.csv` cut at 60% by time into `calib` and `floor`; `fraudTest.csv` becomes
+`blind` whole. Sparkov's own split is already temporal and was preserved.
 
-```
-data/real/
-  calib/    generator sees this
-  floor/    fidelity gate reference. generator never sees it
-  blind/    TSTR only. nothing touches it until final scoring
-```
+| Partition | Rows | Frauds | Prevalence | Span |
+|---|---:|---:|---:|---|
+| `calib` | 778,005 | 4,585 | 0.589% | 2019-01-01 to 2019-11-29 |
+| `floor` | 518,670 | 2,921 | 0.563% | 2019-11-29 to 2020-06-21 |
+| `blind` | 555,719 | 2,145 | 0.386% | 2020-06-21 to 2020-12-31 |
 
-`assert_disjoint()` runs inside `partition()` and raises `RegistryInvalid` if any
-`event_id` appears in two partitions, or is duplicated inside one. This is the assertion
-A.4 asks for, and `test_overlap_assertion_actually_fires` proves it can fail. A guard that
-cannot fail is decoration.
+`blind` is strictly later than both others. Prevalence drifts down by a third across the
+year, which is in the corpus rather than introduced by the split, and it explains the
+transfer number in section 5.
 
-Verified on the fixture:
-
-```
-calib  rows=36,000  frauds=193  prevalence=0.00536  2019-01-01 .. 2019-05-01
-floor  rows=24,000  frauds=135  prevalence=0.00562  2019-05-01 .. 2019-07-19
-blind  rows=20,000  frauds=117  prevalence=0.00585  2020-08-01 .. 2021-02-16
-partition-overlap assertion passed
-```
+`assert_disjoint()` runs inside `partition()` and raises on any `event_id` in two
+partitions. `test_overlap_assertion_actually_fires` proves the guard can fail; a guard
+that cannot fail is decoration.
 
 ---
 
-## 4. The feature count: 69, not 73
-
-My earlier estimate said 73 of 151 features were recoverable from Sparkov.
-**69 are implemented.** The correction:
+## 4. Feature coverage: 69 of 151
 
 | Group | Count | Status |
-|---|---|---|
-| Velocity on `pan_token`, `merchant_id`, `payee_entity_id` (3 keys x 5 windows x 4 aggs) | 60 | built |
-| Geo, temporal and per-entity deviations | 9 | built |
-| Graph features: `payer_pagerank`, `payee_pagerank`, `payee_bank_degree`, `component_size` | 4 | **deferred** |
+|---|---:|---|
+| Velocity on `pan_token`, `merchant_id`, `payee_entity_id` | 60 | built |
+| Geo, temporal, per-entity deviations | 9 | built |
+| Graph features (2 pageranks, bank degree, component size) | 4 | derivable, not built |
 | Velocity on `device_id`, `ip`, `agent_id` | 60 | absent from corpus |
-| Session, 3DS, CES and agentic fields | 18 | absent from corpus |
+| Session, 3DS, CES, agentic fields | 18 | absent from corpus |
 
-The four graph features are genuinely derivable from a card-to-merchant bipartite graph.
-They are not built because they need the graph construction path, which is a separate
-job from this one. Counting them as delivered would have been dishonest, so the number
-is 69 and this row exists.
+My earlier estimate of 73 counted the four graph features as available. They are
+derivable from a card-to-merchant bipartite graph but were not built, so the delivered
+number is 69.
 
-The 9 that are built: `impossible_travel_kmh`, `first_time_payee`, `payee_age_hours`,
-`mcc_novelty_for_entity`, `circadian_loglik`, `amount_z_vs_entity_history`,
-`merchant_benford_dev_24h`, `fanin_payee_24h`, `fanout_payer_24h`.
+Absent families are **NaN, not zero**. A zero in `cnt_device_id_1h` claims the device had
+no prior activity; the truth is Sparkov has no device column. Same for all 15 `declrate_*`
+columns, since Sparkov records no authorisation outcome. LightGBM splits on missing
+natively, so this costs the fit nothing and stops the model learning a constant.
 
-### Absent means NaN, not zero
-
-The existing `velocity_features()` zero-fills missing key families. For real data that is
-wrong: a zero in `cnt_device_id_1h` is a claim that the device made no prior transactions,
-when the truth is that Sparkov has no device column at all. The adapter emits NaN instead.
-LightGBM splits on missing natively, so it costs the fit nothing and stops the model
-learning from a constant. `test_absent_key_families_are_nan_not_zero` locks this.
-
-Same reasoning kills the decline-rate family. Sparkov records no authorisation outcome, so
-all 15 `declrate_*` columns are NaN rather than a constant 0.0 that would look like signal.
-
-### `closed="left"` is preserved
-
-Velocity reuses `rolling_by_key` from `backend/defend/windows.py` rather than
-reimplementing it, so the point-in-time semantics come from the same tested code path the
-synthetic pipeline uses. `test_velocity_excludes_the_current_row` asserts that a card's
-first ever transaction has a 7-day prior count of zero. Include the current row and every
-count leaks its own label.
+Velocity reuses `rolling_by_key`, so `closed="left"` comes from the same tested path the
+synthetic pipeline uses. A card's first transaction has a prior 7-day count of zero,
+asserted in tests.
 
 ---
 
-## 5. Calibration discipline (A.8)
+## 5. Results
 
-The appendix's warning is the one thing in the fit that is easy to get wrong and fatal
-when you do. It is implemented as follows.
+### Channel A, in-period (last 20% of `calib`, held out temporally)
 
-- Negatives are downsampled to 10:1 **for the booster fit only**.
-- The validation slice, which is what Platt is fitted on, stays at the true base rate.
-- The two prevalences are reported separately so the difference is visible, not implied.
+| Metric | Value |
+|---|---:|
+| PR-AUC | **0.2898** |
+| ROC-AUC | 0.9444 |
+| Brier, uncalibrated | 0.013344 |
+| Brier, calibrated | **0.005108** |
 
-From the fixture run:
+PR-AUC 0.2898 against a 0.6022% base rate is about a 48x lift. Platt improves Brier 2.6x,
+which is the number that licenses the cost matrix.
 
-```
-prevalence_source        0.005361   the corpus
-prevalence_fit           0.090909   after 10:1 downsampling, booster only
-prevalence_calibration   0.005000   untouched, Platt sees this
-brier_uncalibrated       0.013178
-brier_calibrated         0.004900   Platt improves calibration ~2.7x
-```
+### Channel A, transferred to `blind`
 
-If Platt were fitted on the downsampled frame instead, the posteriors would describe a
-10:1 world that does not exist, the Elkan threshold derived from them would be wrong, and
-every `cost_per_100k` figure on `/soc` would be wrong.
+| Metric | Value |
+|---|---:|
+| PR-AUC | **0.0653** |
+| ROC-AUC | 0.8665 |
 
-`scale_pos_weight` is set, `is_unbalance` is not. `fit_channel_a` already enforces this.
+**The drop from 0.2898 to 0.0653 is the most important number produced tonight, and it is
+a bad one.** It is genuine temporal drift across a six to twelve month gap on data the fit
+never saw. It is reported because it is the denominator every train-on-synthetic claim has
+to be measured against. A synthetic-trained detector reaching 0.05 on `blind` would be at
+77% of this baseline, and that ratio only means something because the baseline was
+measured rather than assumed.
+
+### Calibration
+
+| Predicted | Observed | n |
+|---:|---:|---:|
+| 0.0018 | 0.0017 | 151,000 |
+| 0.1364 | 0.0988 | 4,121 |
+| 0.2202 | 0.5833 | 480 |
+
+The low bin carries 97% of the mass and is well calibrated. The top bin is wrong in the
+under-confident direction: predicted 0.22 against an observed 0.58. Thin at 480 rows, but
+real, and it argues for treating the highest ladder band as a floor rather than a ceiling.
+
+### Prevalence discipline
+
+| Stage | Prevalence | Rows |
+|---|---:|---:|
+| Source corpus | 0.5893% | 778,005 |
+| Booster fit, after 10:1 downsampling | 9.0909% | 40,128 |
+| Platt calibration slice, untouched | 0.6022% | 155,601 |
+
+Negatives downsampled for the booster only; Platt fitted at the true base rate. The other
+way round and the Elkan threshold, and every cost-per-100k figure on `/soc`, would be wrong.
+
+### Channel C
+
+773,420 legitimate rows, 4,585 fraud rows excluded, contamination 0.008. Fitting an
+anomaly detector on fraud teaches it that fraud is normal.
 
 ---
 
-## 6. What the fixture numbers are and are not
+## 6. The fidelity floor is wired
 
-The fixture is randomly generated data whose only fraud signal is a shifted amount
-distribution. Its `pr_auc` of 0.0205 measures nothing about fraud detection. It proves
-the pipeline runs, the calibration split behaves, and the artefacts write.
+`_real_floor_reference()` in `backend/loop/controller.py` replaces the synthetic gate
+reference with the `floor` partition when `FIDELITY_FLOOR_SOURCE=real`. Default stays
+`synthetic`, and a missing file logs a warning and falls back rather than crashing a run.
 
-**Do not quote any number from section 5 as a result.** They are plumbing evidence. Real
-numbers require the real CSVs.
+Verified: 60,000 rows load carrying `event_ts`, `amount`, `is_fraud`, `pan_token` and
+`mcc`, which covers the columns the marginal, joint and behavioural layers read. The
+behavioural layer keys inter-event autocorrelation on `pan_token`, which Sparkov has.
+
+The head of the partition is used rather than a random sample, because the behavioural
+layer measures within-card sequence structure and random thinning destroys it.
+
+```bash
+FIDELITY_FLOOR_SOURCE=real python -c "from backend.loop.controller import run; run()"
+```
 
 ---
 
 ## 7. Weights bundle
 
-`train` writes into `weights/`:
-
 ```
-channel_a_lgbm.txt         native booster text, version-portable, not pickle
-feature_spec.json          the 69 ordered names, order_is_significant
-channel_a_metrics.json     prevalences, PR-AUC, ROC-AUC, Brier pair, reliability curve
-shap_background.parquet    2,000 rows, required by interventional TreeSHAP at reload
+weights/
+  channel_a_lgbm.txt          native booster text, version-portable
+  channel_c_iforest.joblib    IsolationForest, legitimate rows only
+  feature_spec.json           69 ordered names
+  shap_background.parquet     2,000 rows for interventional TreeSHAP
+  channel_a_metrics.json      all metrics above, machine readable
+  tstr_baseline.json          the transfer baseline
+  MODEL_CARD.md               corpus, partitions, prevalences, results, gaps
 ```
 
-`tstr` additionally writes `tstr_baseline.json`.
-
-Already shipped elsewhere in the repo and not duplicated here: `artifacts/model.onnx`,
-`artifacts/threshold.json` (which already carries `feature_names` and the Elkan
-threshold), and `artifacts/reason_dictionary.json`.
-
-Still missing from the A.8 manifest: `channel_c_iforest.joblib` (the IsolationForest is
-fitted but never persisted) and `MODEL_CARD.md`.
-
-`weights/` is gitignored except a keep-file. A weights bundle fitted on a fixture is
-worse than no bundle, so the fixture-trained one produced during this work was deleted
-rather than left on disk.
+Already in `artifacts/` and not duplicated: `model.onnx`, `threshold.json` (which carries
+`feature_names` and the Elkan threshold), `reason_dictionary.json`.
 
 ---
 
 ## 8. Tests
 
-`tests/test_realdata.py`, 9 tests, all passing:
-
-| Test | Guards |
-|---|---|
-| `test_partitions_do_not_share_events` | no event in two partitions |
-| `test_blind_is_strictly_later_than_calib_and_floor` | the holdout is a holdout |
-| `test_floor_follows_calib_in_time` | gate reference is later than what the generator saw |
-| `test_overlap_assertion_actually_fires` | the guard can fail |
-| `test_rejects_a_csv_that_is_not_sparkov` | wrong download fails loudly |
-| `test_absent_key_families_are_nan_not_zero` | absent stays absent |
-| `test_decline_rate_is_absent_because_sparkov_has_no_response_code` | no fake signal |
-| `test_feature_counts_match_the_documented_split` | 69 and 60 stay true |
-| `test_velocity_excludes_the_current_row` | `closed="left"` |
+`tests/test_realdata.py`, 9 passing: partition disjointness, blind strictly later, floor
+after calib, the guard actually firing, non-Sparkov CSV rejection, absent-means-NaN,
+declrate absence, feature counts, and `closed="left"`.
 
 `backend/realdata` was added to `PACKAGE_DIRS` in `tests/test_schema.py`, so the new code
-is held to the same conventions as the rest of the tree. It passes.
-
-Full suite is unchanged otherwise, including the one known failure
-`test_loop_completes_minimum_rounds` (asserts 5 rounds, the last run was 3 for time).
+is held to the same conventions as the rest of the tree.
 
 ---
 
 ## 9. Not done
 
-- The fidelity floor is **not yet wired**. `_split_reference_and_carrier()` in
-  `backend/loop/controller.py` still splits synthetic traffic for the gate reference.
-  Pointing it at `floor/` is the next change and the highest-value one.
-- The four graph features are deferred, see section 4.
-- The TSTR command currently reports the **real-to-real baseline** only. The synthetic-to-real
-  half needs a synthetic-trained detector scored on `blind/`, which depends on the feature
-  bridge between the two corpora.
-- No `MODEL_CARD.md`.
+- **Synthetic-to-real TSTR.** The baseline half is measured; the synthetic-trained half
+  needs a feature bridge between the two corpora.
+- **Four graph features**, see section 4.
+- **A loop run against the real floor.** The wiring is in and verified; the run itself is
+  the next thing to spend 45 minutes on.
+- `test_loop_completes_minimum_rounds` still fails, asserting 5 rounds where the last run
+  was 3 for time. Unrelated to this work.
 
 ---
 
 ## 10. The gap to state out loud
 
-Channel A fitted on Sparkov has zero coverage of the agentic surface: V19 prompt
-injection, cart-hash mismatch, mandate-scope breach. No public corpus contains a Payment
-Mandate, an attestation or a cart hash, so this is not fixable by choosing a different
-dataset. Say it before a judge finds it.
+Channel A here has zero coverage of the agentic surface: V19 prompt injection, cart-hash
+mismatch, mandate-scope breach. No public corpus contains a Payment Mandate, an
+attestation or a cart hash, because the standards defining them are still arriving. Not
+fixable by picking a different dataset. Say it before a judge finds it.

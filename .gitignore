@@ -11,5 +11,3 @@ frontend/.next/
 frontend/node_modules/
 .claude/
 .serena/
-weights/*
-!weights/.gitkeep

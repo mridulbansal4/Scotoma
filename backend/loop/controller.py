@@ -249,6 +249,7 @@ def bootstrap(config: PayLoopConfig) -> LoopContext:
     persist("edges", edges, mode="replace")
 
     reference, carrier = _split_reference_and_carrier(partition.pool_events)
+    reference = _real_floor_reference(config) or reference
     evaluation_legit = _evaluation_window(partition.pool_events)
 
     context_features = build_feature_context(population, partition.pool_events)
@@ -293,6 +294,30 @@ def _evaluation_window(legit: pd.DataFrame) -> pd.DataFrame:
     boundary = pd.Timestamp(SIM_START) + pd.Timedelta(days=TRAIN_END_DAY)
     held = legit[pd.to_datetime(legit["event_ts"], utc=True) >= boundary]
     return held.reset_index(drop=True)
+
+
+def _real_floor_reference(config: PayLoopConfig) -> pd.DataFrame | None:
+    """The Sparkov floor partition as the gate reference, when one is configured.
+
+    A synthetic reference makes every degradation ratio a comparison between the generator
+    and itself, so the 1.0 denominator is whatever the generator happens to produce. The
+    floor partition is real traffic the generator has never seen, which is what the ratio
+    is supposed to be measured against. Returns None when real data is not configured or
+    not present, and the caller keeps the synthetic split.
+    """
+    if config.fidelity_floor_source != "real":
+        return None
+    target = Path(config.real_data_dir) / "floor.parquet"
+    if not target.exists():
+        LOGGER.warning("fidelity_floor_source=real but %s is missing; using synthetic", target)
+        return None
+    floor = pd.read_parquet(target)
+    if len(floor) > REFERENCE_SAMPLE_ROWS:
+        # Head, not a random sample: the behavioural layer measures inter-event structure
+        # within a card, and thinning rows at random destroys the sequences it reads.
+        floor = floor.head(REFERENCE_SAMPLE_ROWS)
+    LOGGER.info("fidelity gate reference is real traffic: %s rows from %s", len(floor), target)
+    return floor.reset_index(drop=True)
 
 
 def _split_reference_and_carrier(legit: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:

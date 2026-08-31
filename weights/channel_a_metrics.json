@@ -1,0 +1,41 @@
+{
+  "trained_at": "2026-08-31T12:00:33.020478+00:00",
+  "corpus": "sparkov",
+  "rows_total": 778005,
+  "rows_fit": 40128,
+  "prevalence_source": 0.005893,
+  "prevalence_fit": 0.090909,
+  "prevalence_calibration": 0.006022,
+  "pr_auc": 0.2898,
+  "roc_auc": 0.9444,
+  "brier_calibrated": 0.005108,
+  "brier_uncalibrated": 0.013344,
+  "reliability": [
+    {
+      "bin_lower": 0.0,
+      "bin_upper": 0.1,
+      "mean_predicted": 0.0017830724057973772,
+      "observed_rate": 0.0016556291390728477,
+      "count": 151000
+    },
+    {
+      "bin_lower": 0.1,
+      "bin_upper": 0.2,
+      "mean_predicted": 0.13639511942846,
+      "observed_rate": 0.09876243630186848,
+      "count": 4121
+    },
+    {
+      "bin_lower": 0.2,
+      "bin_upper": 0.30000000000000004,
+      "mean_predicted": 0.22015394640567318,
+      "observed_rate": 0.5833333333333334,
+      "count": 480
+    }
+  ],
+  "channel_c": {
+    "rows_fitted": 773420,
+    "fraud_rows_excluded": 4585,
+    "contamination": 0.008
+  }
+}

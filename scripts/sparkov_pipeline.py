@@ -59,7 +59,11 @@ def cmd_train(args: argparse.Namespace) -> int:
 
     result, fit = trainer.train(calib, config, negative_ratio=args.negative_ratio)
     background = trainer.build_features(calib.head(SHAP_BACKGROUND_ROWS), include_absent=False)
-    written = trainer.export_weights(result, fit, WEIGHTS_DIR, background=background)
+    channel_c = trainer.fit_and_export_channel_c(calib, config, WEIGHTS_DIR)
+    written = trainer.export_weights(
+        result, fit, WEIGHTS_DIR, background=background, extra={"channel_c": channel_c}
+    )
+    written.append("channel_c_iforest.joblib")
 
     for key in (
         "rows_total",

@@ -150,3 +150,29 @@ def export_weights(
         background.to_parquet(out_dir / "shap_background.parquet", index=False)
         written.append("shap_background.parquet")
     return written
+
+
+def fit_and_export_channel_c(frame: pd.DataFrame, config: PayLoopConfig, out_dir: Path) -> dict:
+    """Channel C on real legitimate traffic only.
+
+    Fitting the anomaly detector on fraud as well would teach it that fraud is normal,
+    which is the one thing it exists not to believe. Zero-day recall only means something
+    if the model has never been shown the thing it is asked to find surprising.
+    """
+    import joblib
+
+    from backend.defend.anomaly import fit_channel_c
+    from backend.runtime.seeding import rng_for
+
+    legitimate = frame[frame["is_fraud"] == 0]
+    matrix = build_features(legitimate, include_absent=False)
+    design = np.nan_to_num(matrix.to_numpy("float32"), nan=0.0, posinf=0.0, neginf=0.0)
+    result = fit_channel_c(design, config, rng_for("realdata:channel_c"))
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    joblib.dump(result.model, out_dir / "channel_c_iforest.joblib")
+    return {
+        "rows_fitted": int(len(legitimate)),
+        "fraud_rows_excluded": int(len(frame) - len(legitimate)),
+        "contamination": config.iforest_contamination,
+    }

@@ -36,6 +36,12 @@ class PayLoopConfig(BaseSettings):
     target_fraud_rate_agentic: float = 0.0050
     prevalence_hard_cap: float = 0.01
 
+    # "synthetic" splits legitimate traffic for the gate reference, which means the gate
+    # compares the generator against its own output. "real" points the reference at the
+    # Sparkov floor partition, which is what makes a degradation ratio mean anything.
+    fidelity_floor_source: str = "synthetic"
+    real_data_dir: str = "./data/real"
+
     fidelity_ks_max: float = 0.10
     fidelity_pcd_max: float = 0.15
     fidelity_behavioral_max: float = 10.0
