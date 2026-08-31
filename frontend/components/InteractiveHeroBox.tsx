@@ -1,55 +1,85 @@
 'use client';
 
 import { useMotionValue, useSpring, useMotionTemplate, motion } from 'motion/react';
-import { useRef, MouseEvent, ReactNode } from 'react';
+import { useRef, MouseEvent, ReactNode, useState } from 'react';
 
-export function InteractiveHeroBox({ children }: { children: ReactNode }) {
+export function InteractiveHeroBox({
+  children,
+  className = '',
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   // Track raw mouse coordinates
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  
-  // Apply spring physics for that smooth, laggy premium feel
-  const smoothX = useSpring(mouseX, { stiffness: 50, damping: 20 });
-  const smoothY = useSpring(mouseY, { stiffness: 50, damping: 20 });
 
-  // Optional: fade the gradient in/out on enter/leave
-  const opacity = useSpring(0, { stiffness: 60, damping: 20 });
+  // Snappy spring tracking for immediate natural spotlight movement
+  const smoothX = useSpring(mouseX, { stiffness: 350, damping: 28 });
+  const smoothY = useSpring(mouseY, { stiffness: 350, damping: 28 });
 
-  function handleMouseMove(e: MouseEvent<HTMLDivElement>) {
-    const { left, top } = e.currentTarget.getBoundingClientRect();
-    mouseX.set(e.clientX - left);
-    mouseY.set(e.clientY - top);
+  const [isHovered, setIsHovered] = useState(false);
+
+  function handleMouseEnter(e: MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Immediately snap initial position to mouse enter point so spotlight doesn't slide from (0,0)
+    if (typeof mouseX.jump === 'function') {
+      mouseX.jump(x);
+      mouseY.jump(y);
+    } else {
+      mouseX.set(x);
+      mouseY.set(y);
+    }
+    setIsHovered(true);
   }
 
-  // Construct the CSS radial gradient using the smoothed coordinates
-  // Darkened as requested for better visibility
+  function handleMouseMove(e: MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    mouseX.set(e.clientX - rect.left);
+    mouseY.set(e.clientY - rect.top);
+    if (!isHovered) {
+      setIsHovered(true);
+    }
+  }
+
+  function handleMouseLeave() {
+    setIsHovered(false);
+  }
+
+  // Construct crisp, dark, highly visible radial gradient with a focused spotlight radius
   const background = useMotionTemplate`radial-gradient(
-    450px circle at ${smoothX}px ${smoothY}px,
-    rgba(35, 55, 130, 0.28),
-    rgba(35, 55, 130, 0.12) 45%,
-    transparent 80%
+    280px circle at ${smoothX}px ${smoothY}px,
+    rgba(30, 45, 110, 0.38),
+    rgba(30, 45, 110, 0.15) 42%,
+    transparent 75%
   )`;
 
   return (
     <div
       ref={containerRef}
+      onMouseEnter={handleMouseEnter}
       onMouseMove={handleMouseMove}
-      onMouseEnter={() => opacity.set(1)}
-      onMouseLeave={() => opacity.set(0)}
-      className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-50/90 via-blue-50/40 to-white/95 border border-indigo-200/80 p-6 lg:p-8 shadow-sm sarvam-mesh-texture cursor-default touch-none"
+      onMouseLeave={handleMouseLeave}
+      className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-50/90 via-blue-50/40 to-white/95 border border-indigo-200/80 p-6 lg:p-8 shadow-sm sarvam-mesh-texture cursor-default touch-none ${className}`}
     >
-      {/* Existing static top-right ambient glow */}
+      {/* Static top-right ambient glow */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -top-20 -right-20 h-80 w-80 rounded-full bg-gradient-to-br from-indigo-300/30 via-blue-200/20 to-transparent blur-3xl"
       />
 
-      {/* The animated cursor-following spotlight overlay */}
+      {/* The instant cursor-following spotlight overlay */}
       <motion.div
-        className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-500"
-        style={{ background, opacity }}
+        className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-150"
+        style={{
+          background,
+          opacity: isHovered ? 1 : 0,
+        }}
       />
 
       <div className="flex flex-col items-start max-w-4xl relative z-10">
