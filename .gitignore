@@ -25,6 +25,9 @@ npm-debug.log*
 *.docx
 ~$*
 
+# loop run event logs (regenerate with `make loop`)
+runs/**/*.jsonl
+
 # local demo/presentation notes
 DEMO_SCRIPT.md
 
