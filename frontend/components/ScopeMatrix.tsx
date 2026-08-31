@@ -73,7 +73,7 @@ export function ScopeMatrix({ data }: { data: ScopeMatrixData }) {
                           opacity: highlight === 'none' || highlight === scope ? 1 : 0.45,
                         }}
                       >
-                        {present ? value.toFixed(SCORE_DIGITS) : '—'}
+                        {present ? value.toFixed(SCORE_DIGITS) : '-'}
                       </td>
                     );
                   })}

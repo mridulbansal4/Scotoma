@@ -51,7 +51,7 @@ export function RoundTimeline({ rounds }: { rounds: RoundRecord[] }) {
             {record.suspicious_pr_auc ? (
               <div className="mt-3 rounded-lg bg-rose-100/60 p-2.5 border border-rose-200/80 text-xs font-semibold text-rose-800 flex items-center gap-1.5">
                 <AlertCircle size={14} className="shrink-0" />
-                <span>SUSPICIOUS PR-AUC — treated as defect</span>
+                <span>SUSPICIOUS PR-AUC, treated as defect</span>
               </div>
             ) : null}
           </article>

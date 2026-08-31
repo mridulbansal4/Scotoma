@@ -43,7 +43,7 @@ export default function AtlasPage() {
         </h1>
 
         <p className="mt-3 text-[15px] md:text-[17px] leading-relaxed text-slate-600 max-w-2xl font-medium">
-          Eight injector modules across twelve injector classes. Greyed rows are documented, not simulated — displaying the visibility gap rather than implying perfection.
+          Eight injector modules across twelve injector classes. Greyed rows are documented, not simulated. The visibility gap is displayed rather than implying perfection.
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">

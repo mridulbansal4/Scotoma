@@ -99,7 +99,7 @@ export function VectorTable({ rows, selected, onSelect }: VectorTableProps) {
                       <span>Live</span>
                     </span>
                   ) : (
-                    <span className="text-[13px] text-slate-400">—</span>
+                    <span className="text-[13px] text-slate-400">-</span>
                   )}
                 </td>
                 <td className="px-5 py-4">

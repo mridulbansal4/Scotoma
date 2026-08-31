@@ -13,7 +13,7 @@ export function ClaimText({ claim }: { claim: Claim | null }) {
     <p className="text-body">
       {claim.approved_text}
       {suffix ? (
-        <span style={{ color: 'var(--slate-gray)' }}> — {suffix}.</span>
+        <span style={{ color: 'var(--slate-gray)' }}> ({suffix}).</span>
       ) : null}
     </p>
   );

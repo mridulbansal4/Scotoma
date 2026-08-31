@@ -30,7 +30,7 @@ export function LatencyFigure({ label, value, source, note }: LatencyFigureProps
       </p>
       <div className="flex items-baseline gap-3">
         <span className="font-mono text-3xl font-bold tracking-tight text-[#1e2033]">
-          {source === 'unavailable' ? '—' : `${value.toFixed(DECIMALS)} ms`}
+          {source === 'unavailable' ? '-' : `${value.toFixed(DECIMALS)} ms`}
         </span>
         <span
           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${badge.bg} ${badge.color} ${badge.border}`}

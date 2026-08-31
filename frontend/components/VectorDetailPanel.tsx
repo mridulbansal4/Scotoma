@@ -61,7 +61,7 @@ export function VectorDetailPanel({ vector, row, onClose }: VectorDetailPanelPro
 
           <p className="mt-5 text-xs font-mono font-semibold uppercase tracking-wider text-slate-500">Measured Recall</p>
           <p className="mt-1.5 text-sm font-semibold text-[#1e2033]">
-            {row && row.recall !== null ? percent(row.recall) : 'No Injector — Documented Only'}
+            {row && row.recall !== null ? percent(row.recall) : 'No Injector, Documented Only'}
           </p>
         </div>
       </div>

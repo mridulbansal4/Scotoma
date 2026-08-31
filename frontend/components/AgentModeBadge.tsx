@@ -9,7 +9,7 @@ export function AgentModeBadge({ mode }: { mode: string }) {
       }`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${live ? 'bg-emerald-400 animate-pulse' : 'bg-slate-300'}`} />
-      <span>{live ? 'AGENT: LIVE' : 'AGENT: OFFLINE — evolutionary search'}</span>
+      <span>{live ? 'AGENT: LIVE' : 'AGENT: OFFLINE, evolutionary search'}</span>
     </span>
   );
 }

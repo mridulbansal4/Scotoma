@@ -49,7 +49,7 @@ NETWORK_CALLS: tuple[str, ...] = ("fetch(", "axios", "XMLHttpRequest", "EventSou
 HONESTY_CALLOUT: str = (
     "This loop measures and shrinks a detector's blind spots. It does not claim to make anyone "
     "monotonically safer. The blind holdout is one attack family and one entity cohort, neither "
-    "of which enters any training pool — it is not independently generated."
+    "of which enters any training pool, and it is not independently generated."
 )
 
 HIDDEN_PATTERN = re.compile(r"(className=[\"'][^\"']*hidden|<[A-Za-z][^>]*\shidden[\s>=])")

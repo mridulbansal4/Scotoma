@@ -13,7 +13,7 @@ function verdict(gate: GatePayload, layer: string): string {
 
 function metric(gate: GatePayload, layer: string, key: string): string {
   const value = gate.layers[layer]?.[key];
-  return typeof value === 'number' ? value.toFixed(value < 1 ? 4 : 2) : '—';
+  return typeof value === 'number' ? value.toFixed(value < 1 ? 4 : 2) : '-';
 }
 
 export function AblationComparison({ simulator, ablation }: AblationComparisonProps) {

@@ -200,7 +200,7 @@ export function CostDial({ alerts, parameters, bands, onChange }: CostDialProps)
               FP per True Positive
             </dt>
             <dd className="font-mono text-3xl font-semibold tracking-tight text-[#1e2033] mt-2">
-              {Number.isFinite(stats.fpTp) ? stats.fpTp.toFixed(1) : '—'}
+              {Number.isFinite(stats.fpTp) ? stats.fpTp.toFixed(1) : '-'}
             </dd>
           </div>
           <div>

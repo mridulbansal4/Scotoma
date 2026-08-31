@@ -27,8 +27,8 @@ const REJECTED = 'FIDELITY_REJECTED';
 const REJECTED_BAND_OPACITY = 0.12;
 
 const SERIES = [
-  { key: 'evasion_active', label: 'Evasion — active campaign', color: 'var(--ink-black)', width: 2, dash: undefined },
-  { key: 'evasion_blind', label: 'Evasion — blind holdout', color: 'var(--link-blue)', width: 2, dash: undefined },
+  { key: 'evasion_active', label: 'Evasion, active campaign', color: 'var(--ink-black)', width: 2, dash: undefined },
+  { key: 'evasion_blind', label: 'Evasion, blind holdout', color: 'var(--link-blue)', width: 2, dash: undefined },
   { key: 'fpr_legit', label: 'FPR on legitimate traffic', color: 'var(--slate-gray)', width: 1.5, dash: '4 4' },
 ] as const;
 

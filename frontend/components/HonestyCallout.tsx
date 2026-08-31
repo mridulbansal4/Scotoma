@@ -3,7 +3,7 @@
 const CALLOUT_TEXT =
   "This loop measures and shrinks a detector's blind spots. It does not claim to make anyone " +
   'monotonically safer. The blind holdout is one attack family and one entity cohort, neither ' +
-  'of which enters any training pool — it is not independently generated.';
+  'of which enters any training pool, and it is not independently generated.';
 
 export function HonestyCallout() {
   return (

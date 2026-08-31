@@ -14,7 +14,7 @@ export function GnnResultCard({ gnn }: { gnn: GnnResult }) {
         {lift === null ? 'not evaluated' : lift.toFixed(LIFT_DIGITS)}
       </p>
       <p className="mt-2 text-data" style={{ color: 'var(--slate-gray)' }}>
-        bar to clear: {gnn.kill_threshold.toFixed(2)} — three absolute PR-AUC points, not three
+        bar to clear: {gnn.kill_threshold.toFixed(2)}, three absolute PR-AUC points, not three
         percent
       </p>
       <p

@@ -14,8 +14,8 @@ const sofia = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'Scotoma — Closed-Loop Adversarial Fraud Engine',
-  description: 'Offline adversarial testing lab — blind-spot measurement, not a guarantee.',
+  title: 'Scotoma: Closed-Loop Adversarial Fraud Engine',
+  description: 'Offline adversarial testing lab. Blind-spot measurement, not a guarantee.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -57,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="mt-10 h-px w-full bg-white/10" />
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-300/70">
               <p>
-                Scotoma — Offline Adversarial Testing Engine. Every figure is read from committed run artefacts.
+                Scotoma. Offline Adversarial Testing Engine. Every figure is read from committed run artefacts.
               </p>
               <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-medium text-white/90">
                 Zero Network Calls • Statically Audited

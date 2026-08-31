@@ -52,7 +52,7 @@ export function RecallHeatmap({ rounds, holdoutVectors }: RecallHeatmapProps) {
                         color: readableOn(present ? value : null),
                       }}
                     >
-                      {present ? value.toFixed(2) : '—'}
+                      {present ? value.toFixed(2) : '-'}
                     </td>
                   );
                 })}

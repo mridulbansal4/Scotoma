@@ -3,22 +3,22 @@ const RATE_DIGITS = 3;
 const MILLISECOND_DIGITS = 2;
 
 export function percent(value: number | null | undefined, digits = PERCENT_DIGITS): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  if (value === null || value === undefined || Number.isNaN(value)) return '-';
   return `${(value * 100).toFixed(digits)}%`;
 }
 
 export function rate(value: number | null | undefined, digits = RATE_DIGITS): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  if (value === null || value === undefined || Number.isNaN(value)) return '-';
   return value.toFixed(digits);
 }
 
 export function milliseconds(value: number | null | undefined): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  if (value === null || value === undefined || Number.isNaN(value)) return '-';
   return `${value.toFixed(MILLISECOND_DIGITS)} ms`;
 }
 
 export function currency(value: number | null | undefined, code = 'USD'): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  if (value === null || value === undefined || Number.isNaN(value)) return '-';
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: code,
@@ -27,7 +27,7 @@ export function currency(value: number | null | undefined, code = 'USD'): string
 }
 
 export function count(value: number | null | undefined): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  if (value === null || value === undefined || Number.isNaN(value)) return '-';
   return new Intl.NumberFormat('en-US').format(value);
 }
 

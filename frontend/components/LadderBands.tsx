@@ -58,14 +58,14 @@ export function LadderBands({ alerts, bands, threshold }: LadderBandsProps) {
       name: 'BAND 2',
       action: 'STEP-UP (3DS)',
       actionBg: 'bg-blue-50 text-blue-700',
-      thresholdText: `${rate(bands.approve_max, 2)} – ${rate(bands.stepup_max, 2)}`,
+      thresholdText: `${rate(bands.approve_max, 2)} - ${rate(bands.stepup_max, 2)}`,
       icon: <ShieldExclamationIcon />
     },
     {
       name: 'BAND 3',
       action: 'HOLD',
       actionBg: 'bg-amber-50 text-amber-700',
-      thresholdText: `${rate(bands.stepup_max, 2)} – ${rate(bands.hold_max, 2)}`,
+      thresholdText: `${rate(bands.stepup_max, 2)} - ${rate(bands.hold_max, 2)}`,
       icon: <HandRaisedIcon />
     },
     {
