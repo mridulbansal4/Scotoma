@@ -14,7 +14,7 @@ const sofia = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'Scotoma: Closed-Loop Adversarial Fraud Engine',
+  title: 'Scotoma',
   description: 'Offline adversarial testing lab. Blind-spot measurement, not a guarantee.',
 };
 

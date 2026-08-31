@@ -1,0 +1,39 @@
+{
+  "calibration": {
+    "brier_calibrated": 0.001248,
+    "brier_uncalibrated": 0.012361,
+    "reliability": [
+      {
+        "bin_lower": 0.0,
+        "bin_upper": 0.1,
+        "count": 238157,
+        "mean_predicted": 0.000815933531615432,
+        "observed_rate": 0.0006802235500111271
+      },
+      {
+        "bin_lower": 0.1,
+        "bin_upper": 0.2,
+        "count": 1042,
+        "mean_predicted": 0.13021663502486266,
+        "observed_rate": 0.16122840690978887
+      }
+    ]
+  },
+  "fp_tp_ratio": 0.044,
+  "precision_at_k": 1.0,
+  "recall": {
+    "V01": 0.9934,
+    "V02": 0.7966,
+    "V05": 1.0,
+    "V06": 0.974,
+    "V07": 0.0311,
+    "V18": 1.0,
+    "V19": 0.1922,
+    "V20": 0.7477,
+    "V21": 0.6822,
+    "V22": 0.3911,
+    "V28": 0.9307,
+    "V31": 0.5669
+  },
+  "recall_at_95_precision": 0.591
+}
