@@ -29,6 +29,7 @@ PACKAGE_DIRS: tuple[str, ...] = (
     "backend/fidelity",
     "backend/generate",
     "backend/loop",
+    "backend/realdata",
     "backend/registry",
     "backend/runtime",
     "backend/schema",
