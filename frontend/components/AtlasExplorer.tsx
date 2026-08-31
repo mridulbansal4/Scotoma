@@ -42,25 +42,28 @@ export function AtlasExplorer({ coverage, vectors }: AtlasExplorerProps) {
 
   return (
     <>
-      <div className="mt-16 grid gap-12 md:grid-cols-3">
+      <div className="mt-8 grid gap-8 md:grid-cols-3">
         <StatPortrait
           value={String(coverage.total_vectors)}
           label="Documented"
           caption={`${coverage.counts.documented} documented, ${coverage.counts.emerging} emerging, ${coverage.counts.speculative} speculative.`}
+          href="#vectors"
         />
         <StatPortrait
           value={String(coverage.vectors_with_injector)}
           label="Simulated"
           caption={`${coverage.injector_modules} modules and ${coverage.injector_classes} classes ship as live simulators.`}
+          href="/redteam"
         />
         <StatPortrait
           value={percent(rows.length ? simulated / rows.length : 0, 1)}
           label="Coverage in view"
           caption="Recomputed against the current filters, not a fixed headline."
+          href="/loop"
         />
       </div>
 
-      <div className="mt-16">
+      <div className="mt-8" id="vectors">
         <FilterBar filters={filters} onChange={setFilters} />
       </div>
 

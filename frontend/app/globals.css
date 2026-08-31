@@ -3,29 +3,35 @@
 @tailwind utilities;
 
 :root {
-  --canvas-cream: #f3f0ee;
-  --lifted-cream: #fcfbfa;
+  /* Sarvam.ai Inspired Minimalist Slate & Periwinkle Palette */
+  --canvas-cream: #fafbfc;
+  --lifted-cream: #ffffff;
   --white: #ffffff;
-  --soft-bone: #f4f4f4;
-  --ink-black: #141413;
-  --charcoal: #262627;
-  --slate-gray: #696969;
-  --dust-taupe: #d1cdc7;
-  --ghost-cream: #e8e2da;
+  --soft-bone: #f0f2f7;
+  --ink-black: #1e2033;
+  --charcoal: #2a2c33;
+  --slate-gray: #5a5f78;
+  --dust-taupe: #dce0ed;
+  --ghost-cream: #f4f5fa;
   --signal-orange: #cf4500;
   --light-signal-orange: #f37338;
   --clay-brown: #9a3a0a;
   --link-blue: #3860be;
   --mc-red: #eb001b;
   --mc-yellow: #f79e1b;
+  --accent-indigo: #6a88e2;
+  --indigo-glow-1: #a5bbfc;
+  --indigo-glow-2: #d5e2ff;
 
-  --radius-button: 20px;
-  --radius-consent: 24px;
-  --radius-stadium: 40px;
-  --radius-pill: 999px;
+  --radius-button: 9999px;
+  --radius-consent: 20px;
+  --radius-stadium: 28px;
+  --radius-pill: 9999px;
 
-  --shadow-1: rgba(0, 0, 0, 0.04) 0px 4px 24px 0px;
-  --shadow-2: rgba(0, 0, 0, 0.08) 0px 24px 48px 0px;
+  --shadow-1: 0 4px 20px -2px rgba(30, 32, 51, 0.05);
+  --shadow-2: 0 20px 40px -8px rgba(30, 32, 51, 0.07), 0 0 0 1px rgba(30, 32, 51, 0.05);
+  --shadow-button-solid: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
+  --shadow-button-outline: inset 0 0 0 1px rgba(30, 32, 51, 0.12), 0 2px 8px rgba(0, 0, 0, 0.03);
 
   --space-unit: 8px;
   --content-max: 1280px;
@@ -37,54 +43,204 @@ body {
   color: var(--ink-black);
   font-weight: 450;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 @layer base {
   h1 {
-    @apply text-[40px] leading-[42px] tracking-[-0.8px] font-medium md:text-[48px] md:leading-[50px] lg:text-hero;
+    @apply text-[38px] leading-[1.08] tracking-[-0.03em] font-medium md:text-[52px] lg:text-[60px];
   }
 
   h2 {
-    @apply text-section;
+    @apply text-[28px] leading-[1.15] tracking-[-0.02em] font-medium md:text-[36px];
   }
 
   h3 {
-    @apply text-card;
+    @apply text-[20px] leading-[1.25] tracking-[-0.01em] font-medium md:text-[24px];
   }
 
   p {
-    @apply text-body;
+    @apply text-body text-slate;
   }
 
-  /* The palette has no green, so pass and fail are carried by ink and signal orange. */
   table {
     font-variant-numeric: tabular-nums;
   }
 }
 
 @layer components {
-  .payloop-section {
-    @apply mx-auto w-full max-w-content px-6 py-12 lg:px-12 lg:py-24;
+  .scotoma-section {
+    @apply mx-auto w-full max-w-content px-6 py-4 lg:px-12 lg:py-6;
   }
 
-  .payloop-card {
-    @apply rounded-stadium bg-lifted p-6 shadow-card lg:p-10;
+  .scotoma-card {
+    @apply rounded-xl bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-md;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+  }
+  .scotoma-card:hover {
+    border-color: rgba(203, 213, 225, 1);
   }
 
-  .payloop-chip {
-    @apply inline-flex items-center rounded-pill px-3 py-1 text-data font-medium;
+  .scotoma-chip {
+    @apply inline-flex items-center rounded-full px-3 py-0.5 text-xs font-semibold transition-colors duration-200;
   }
 
-  .payloop-readout {
-    @apply text-readout tabular-nums;
+  .scotoma-readout {
+    @apply text-readout tabular-nums font-medium tracking-tight text-ink;
   }
 
-  .payloop-skeleton {
-    @apply animate-pulse rounded-button bg-bone;
+  .scotoma-skeleton {
+    @apply animate-pulse rounded-lg bg-slate-100;
+  }
+
+  /* Sarvam.ai Inspired Soft Blue/Periwinkle Card Gradients */
+  .sarvam-blue-card {
+    background: linear-gradient(135deg, #f0f4ff 0%, #e6eeff 50%, #ffffff 100%);
+    border: 1px solid rgba(165, 187, 252, 0.5);
+    box-shadow: 0 4px 20px -2px rgba(106, 136, 226, 0.08);
+  }
+
+  .sarvam-blue-spotlight {
+    position: relative;
+    background: #ffffff;
+    border: 1px solid rgba(213, 226, 255, 0.8);
+    background-image: radial-gradient(circle at top right, rgba(213, 226, 255, 0.45) 0%, transparent 60%);
+  }
+
+  .sarvam-gradient-text {
+    background: linear-gradient(135deg, #1e2033 0%, #3860be 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Sarvam-style Interactive List Row (as in attached user image) */
+  .sarvam-list-row {
+    @apply flex items-center justify-between py-4 px-4 transition-all duration-300 border-b border-slate-200/60 rounded-lg hover:bg-slate-50/80 hover:px-5 group cursor-pointer;
+  }
+
+  .sarvam-list-row:hover .sarvam-arrow {
+    @apply translate-x-1 text-[#1e2033];
+  }
+
+  /* Faint dot mesh background texture */
+  .sarvam-mesh-texture {
+    background-image: radial-gradient(#dce0ed 0.8px, transparent 0.8px);
+    background-size: 20px 20px;
+  }
+
+  /* Radial ambient glows */
+  .sarvam-radial-glow {
+    background: radial-gradient(ellipse at center, var(--indigo-glow-1) 0%, var(--indigo-glow-2) 40%, transparent 70%);
+  }
+
+  .sarvam-radial-divider {
+    background: radial-gradient(circle at center, var(--accent-indigo) 0%, transparent 100%);
+  }
+
+  /* Spotlight hover button background */
+  .sarvam-spotlight-btn {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), background-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .sarvam-spotlight-btn:active {
+    transform: scale(0.97);
   }
 }
 
-.payloop-scroll-x {
+/* Keyframes for subtle animations */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-8px) scale(1.02); }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.98); }
+}
+
+@keyframes fadeInSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-float-slow {
+  animation: floatSlow 8s ease-in-out infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 3s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fadeInSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.scotoma-scroll-x {
   overflow-x: auto;
   scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
 }
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Crazy 3D Stat Ring */
+@keyframes spin-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.scotoma-stat-ring {
+  position: relative;
+  z-index: 1;
+}
+
+.scotoma-stat-ring::before,
+.scotoma-stat-ring::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0%, #1e2033 30%, #6a88e2 60%, transparent 100%);
+  animation: spin-slow 3s linear infinite;
+  z-index: -1;
+}
+
+.scotoma-stat-ring::after {
+  filter: blur(15px);
+  opacity: 0.8;
+}
+
+.scotoma-stat-inner {
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #f4f5fa 60%, #e2e8f0 100%);
+  box-shadow: 
+    inset 0px 10px 20px rgba(255, 255, 255, 1), 
+    inset 0px -10px 20px rgba(30, 32, 51, 0.08), 
+    0 20px 40px -10px rgba(30, 32, 51, 0.2);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+
+

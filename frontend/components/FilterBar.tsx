@@ -32,13 +32,11 @@ function Chip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="payloop-chip border-[1.5px]"
-      style={{
-        background: active ? 'var(--ink-black)' : 'var(--white)',
-        color: active ? 'var(--canvas-cream)' : 'var(--ink-black)',
-        borderColor: 'var(--ink-black)',
-        minHeight: 44,
-      }}
+      className={`inline-flex items-center rounded-full px-4 py-1.5 text-xs font-semibold border transition-all duration-200 ${
+        active
+          ? 'bg-[#1e2033] text-white border-[#1e2033] shadow-sm scale-[1.02]'
+          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+      }`}
     >
       {label}
     </button>
@@ -49,7 +47,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-2 text-eyebrow uppercase" style={{ color: 'var(--slate-gray)' }}>
+        <span className="mr-2 text-xs font-bold uppercase tracking-wider text-slate-500">
           Rail
         </span>
         {RAILS.map((rail) => (
@@ -62,7 +60,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-2 text-eyebrow uppercase" style={{ color: 'var(--slate-gray)' }}>
+        <span className="mr-2 text-xs font-bold uppercase tracking-wider text-slate-500">
           Status
         </span>
         {STATUSES.map((status) => (

@@ -6,11 +6,11 @@ export function GnnResultCard({ gnn }: { gnn: GnnResult }) {
   const lift = gnn.measured_lift_pr_auc;
   const cleared = lift !== null && lift >= gnn.kill_threshold;
   return (
-    <article className="payloop-card">
+    <article className="rounded-xl sarvam-blue-spotlight p-6 shadow-sm border border-indigo-200/80">
       <p className="text-eyebrow uppercase" style={{ color: 'var(--slate-gray)' }}>
         Graph channel · measured lift against its kill rule
       </p>
-      <p className="payloop-readout mt-6">
+      <p className="scotoma-readout mt-6">
         {lift === null ? 'not evaluated' : lift.toFixed(LIFT_DIGITS)}
       </p>
       <p className="mt-2 text-data" style={{ color: 'var(--slate-gray)' }}>

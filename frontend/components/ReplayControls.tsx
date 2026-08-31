@@ -55,11 +55,10 @@ export function ReplayControls({
         ))}
       </div>
       {rounds.length ? (
-        <label className="flex items-center gap-2 text-data">
-          <span style={{ color: 'var(--slate-gray)' }}>Jump to round</span>
+        <label className="flex items-center gap-3 text-data">
+          <span className="font-medium" style={{ color: 'var(--slate-gray)' }}>Jump to round</span>
           <select
-            className="rounded-pill border-[1.5px] border-ink bg-white px-4 py-2 text-data"
-            style={{ minHeight: 44 }}
+            className="rounded-pill border-[1.5px] border-ink bg-white px-3 py-1.5 text-[14px] font-medium cursor-pointer leading-none focus:outline-none"
             onChange={(event) => onJump(Number(event.target.value))}
             defaultValue=""
           >

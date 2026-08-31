@@ -7,8 +7,9 @@ const CALLOUT_TEXT =
 
 export function HonestyCallout() {
   return (
-    <section className="rounded-stadium bg-lifted p-8 lg:p-10">
-      <p className="max-w-3xl text-body">{CALLOUT_TEXT}</p>
+    <section className="rounded-2xl bg-gradient-to-r from-indigo-50/90 via-blue-50/60 to-white border border-indigo-200/80 p-8 lg:p-10 shadow-sm relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200/20 rounded-full blur-2xl pointer-events-none" />
+      <p className="max-w-3xl text-body font-medium text-slate-700 relative z-10">{CALLOUT_TEXT}</p>
     </section>
   );
 }

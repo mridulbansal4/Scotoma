@@ -11,6 +11,8 @@ import {
   loadRounds,
 } from '@/lib/artifacts';
 
+import { InteractiveHeroBox } from '@/components/InteractiveHeroBox';
+
 export default function SocPage() {
   const alerts = loadAlerts();
   const manifest = loadManifest();
@@ -20,7 +22,7 @@ export default function SocPage() {
 
   if (alerts.missing || manifest.missing) {
     return (
-      <div className="payloop-section">
+      <div className="scotoma-section">
         <ErrorState file={alerts.missing ? alerts.name : 'manifest.json'} />
       </div>
     );
@@ -30,18 +32,40 @@ export default function SocPage() {
   const threshold = lastRound?.threshold ?? manifest.data.ladder_bands.approve_max;
 
   return (
-    <div className="payloop-section">
-      <Eyebrow>Blue team</Eyebrow>
-      <h1 className="mt-6 max-w-3xl">
-        Every alert carries its reasons, its band, and the cost of acting on it.
-      </h1>
-
-      <SocConsole
-        alerts={alerts.data}
-        bands={manifest.data.ladder_bands}
-        costMatrix={manifest.data.cost_matrix}
-        threshold={threshold}
+    <div className="scotoma-section relative">
+      {/* Background ambient radial glow */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-10 left-1/2 -z-10 h-[380px] w-[600px] -translate-x-1/2 opacity-30 blur-[90px]"
+        style={{
+          background: 'radial-gradient(ellipse at center, #a5bbfc 0%, #d5e2ff 50%, transparent 75%)',
+        }}
       />
+
+      <InteractiveHeroBox>
+        <div className="flex flex-col items-start max-w-4xl relative z-10">
+          <Eyebrow>BLUE TEAM OPERATIONAL CONSOLE</Eyebrow>
+          <h1 className="mt-3 text-[38px] md:text-[52px] font-medium leading-[1.08] tracking-tight text-[#1e2033]">
+            Real-Time Threat Telemetry.{' '}
+            <span className="sarvam-gradient-text border-b-2 border-indigo-300/60 pb-0.5">
+              Explicit Reason Codes
+            </span>
+            .
+          </h1>
+          <p className="mt-4 text-[17px] md:text-[19px] leading-relaxed text-slate-600 max-w-2xl font-medium">
+            Every alert carries its reason codes, ladder band, and exact financial cost of action. Zero opaque scores.
+          </p>
+        </div>
+      </InteractiveHeroBox>
+
+      <div className="mt-12">
+        <SocConsole
+          alerts={alerts.data}
+          bands={manifest.data.ladder_bands}
+          costMatrix={manifest.data.cost_matrix}
+          threshold={threshold}
+        />
+      </div>
 
       <div className="mt-16 grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {recall.missing ? null : (
@@ -52,7 +76,7 @@ export default function SocPage() {
         )}
 
         {latency.missing ? null : (
-          <aside className="payloop-card flex flex-col gap-8">
+          <aside className="scotoma-card flex flex-col gap-8 border border-slate-200/60 bg-white">
             <LatencyFigure label="p50 model scoring" value={latency.data.p50_ms} source="measured" />
             <LatencyFigure label="p95 model scoring" value={latency.data.p95_ms} source="measured" />
             <LatencyFigure
@@ -72,7 +96,7 @@ export default function SocPage() {
               source={latency.data.feature_lookup?.source === 'measured' ? 'measured' : 'unavailable'}
               note={latency.data.feature_lookup?.reason}
             />
-            <p className="text-data" style={{ color: 'var(--slate-gray)' }}>
+            <p className="text-data text-slate-500">
               {latency.data.iterations.toLocaleString()} single-row scoring calls on {latency.data.host},
               first {latency.data.warmup} discarded.
             </p>
@@ -82,3 +106,4 @@ export default function SocPage() {
     </div>
   );
 }
+

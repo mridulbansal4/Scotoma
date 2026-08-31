@@ -10,11 +10,11 @@ export function RoundSummaryStrip({ rounds }: { rounds: RoundRecord[] }) {
         return (
           <span
             key={record.round}
-            className="payloop-chip"
-            style={{
-              background: rejected ? 'var(--signal-orange)' : 'var(--ink-black)',
-              color: rejected ? 'var(--white)' : 'var(--canvas-cream)',
-            }}
+            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border transition-all ${
+              rejected
+                ? 'bg-amber-50 text-amber-900 border-amber-200'
+                : 'bg-indigo-50/80 text-indigo-950 border-indigo-200/80 hover:bg-indigo-100/60'
+            }`}
           >
             Round {record.round + 1} · {record.status.replace(/_/g, ' ').toLowerCase()}
           </span>

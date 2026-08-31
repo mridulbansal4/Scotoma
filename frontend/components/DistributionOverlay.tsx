@@ -74,7 +74,7 @@ export function DistributionOverlay({
       </figcaption>
       <div style={{ height: CHART_HEIGHT }} className="mt-4">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 8, right: 12, bottom: 24, left: 4 }}>
+          <AreaChart data={data} margin={{ top: 8, right: 12, bottom: 48, left: 4 }}>
             <CartesianGrid stroke="var(--soft-bone)" vertical={false} />
             <XAxis
               dataKey="x"
@@ -93,7 +93,7 @@ export function DistributionOverlay({
                 fontSize: 13,
               }}
             />
-            <Legend wrapperStyle={{ fontSize: 13 }} />
+            <Legend wrapperStyle={{ fontSize: 13, paddingTop: '20px' }} verticalAlign="bottom" height={40} />
             {mode !== 'synthetic' ? (
               <Area
                 type="monotone"
