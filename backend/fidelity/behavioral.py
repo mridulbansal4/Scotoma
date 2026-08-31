@@ -87,7 +87,15 @@ def evaluate(batch: pd.DataFrame, reference: pd.DataFrame, config: PayLoopConfig
     ceiling = float(config.fidelity_behavioral_max) * STRUCTURAL_FAILURE_MULTIPLE
     ratios: dict[str, float] = {}
     structural: list[str] = []
+    not_comparable: list[str] = []
     for key in BEHAVIORAL_KEYS:
+        if key not in reference.columns:
+            # The reference corpus has no such column, so there is nothing to compare
+            # against. Scoring this as a structural failure would blame the generator for
+            # a limitation of the reference, and one absent column would then pin the
+            # composite at the ceiling and mask every real ratio beside it.
+            not_comparable.append(key)
+            continue
         real, synth = _iet_std_by_key(reference, key), _iet_std_by_key(batch, key)
         if not (np.isfinite(real) and np.isfinite(synth)) or min(real, synth) <= 0.0:
             ratios[f"velocity_{key}"] = ceiling
@@ -103,6 +111,10 @@ def evaluate(batch: pd.DataFrame, reference: pd.DataFrame, config: PayLoopConfig
         ),
         "iet_autocorr_batch": round(lag1_iet_autocorrelation(batch, AUTOCORRELATION_KEY), 4),
     }
+    if not_comparable:
+        # Reported, not silently dropped: a reader has to be able to see which keys the
+        # reference could not speak to before trusting the composite.
+        observed["not_comparable_keys"] = ",".join(not_comparable)
     if ratios["iet_autocorr"] >= ceiling:
         structural.append(
             f"within-entity lag-1 inter-event-time autocorrelation on {AUTOCORRELATION_KEY} "

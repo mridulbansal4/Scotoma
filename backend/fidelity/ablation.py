@@ -109,6 +109,10 @@ def marginal_shares(batch: pd.DataFrame, reference: pd.DataFrame) -> dict:
 
 
 def _decline_by_rail(frame: pd.DataFrame) -> dict[str, float]:
+    # An external reference corpus may carry neither column. Absent is not zero, so the
+    # answer is an empty mapping rather than a fabricated all-approved rail.
+    if "rail" not in frame.columns or "response_code" not in frame.columns:
+        return {}
     declined = frame["response_code"].astype("object").fillna("00").ne("00")
     return {
         str(rail): round(float(value), 4)

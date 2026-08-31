@@ -115,6 +115,9 @@ def to_ces(frame: pd.DataFrame) -> pd.DataFrame:
     # Sparkov records no authorisation outcome. declrate would otherwise read as a
     # constant zero and look like a real signal; it is absent, and featurize marks it so.
     out["response_code"] = pd.NA
+    # Sparkov is retail card-not-present throughout, so the rail is a constant and saying
+    # so is accurate. The joint layer reads it as a categorical.
+    out["rail"] = "CARD_CNP"
     out["is_fraud"] = pd.to_numeric(frame["is_fraud"], errors="coerce").fillna(0).astype("int8")
     return out.sort_values("event_ts").reset_index(drop=True)
 
