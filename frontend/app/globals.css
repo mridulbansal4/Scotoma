@@ -49,10 +49,12 @@ body {
 @layer base {
   h1 {
     @apply text-[38px] leading-[1.08] tracking-[-0.03em] font-medium md:text-[52px] lg:text-[60px];
+    font-optical-sizing: auto;
   }
 
   h2 {
     @apply text-[28px] leading-[1.15] tracking-[-0.02em] font-medium md:text-[36px];
+    font-optical-sizing: auto;
   }
 
   h3 {
@@ -61,6 +63,7 @@ body {
 
   p {
     @apply text-body text-slate;
+    letter-spacing: 0.01em; /* Slight positive tracking for legibility at small sizes */
   }
 
   table {
@@ -83,6 +86,13 @@ body {
 
   .scotoma-chip {
     @apply inline-flex items-center rounded-full px-3 py-0.5 text-xs font-semibold transition-colors duration-200;
+  }
+
+  .scotoma-button {
+    @apply transition-transform duration-100;
+  }
+  .scotoma-button:active, button:active, a:active {
+    transform: scale(0.97); /* Instant response scale-down on press */
   }
 
   .scotoma-readout {
@@ -241,6 +251,22 @@ body {
   justify-content: center;
 }
 
+/* Apple Design: Reduced Transparency & Motion Adjustments */
+@media (prefers-reduced-transparency: reduce) {
+  .backdrop-blur-md,
+  .backdrop-blur-lg,
+  .backdrop-blur-2xl,
+  .backdrop-blur-3xl {
+    backdrop-filter: none !important;
+    background-color: var(--white) !important;
+  }
+}
 
-
-
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

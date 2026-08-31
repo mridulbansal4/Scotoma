@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, ShieldAlert } from 'lucide-react';
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { ScotomaMark } from './ScotomaMark';
 
 const LINKS = [
@@ -22,7 +23,7 @@ export function NavPill() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 pt-4 px-4 lg:px-8 pointer-events-none transform-gpu">
-      <nav className="pointer-events-auto mx-auto flex max-w-content items-center justify-between rounded-full bg-white/85 backdrop-blur-md px-4 py-2.5 shadow-[0_4px_25px_-5px_rgba(30,32,51,0.08),0_0_0_1px_rgba(30,32,51,0.08)] lg:px-8 lg:py-3 transition-all duration-200 transform-gpu">
+      <nav className="pointer-events-auto mx-auto flex max-w-content items-center justify-between rounded-full bg-white/60 backdrop-blur-2xl backdrop-saturate-[1.8] border-t border-white/40 px-4 py-2.5 shadow-[0_4px_25px_-5px_rgba(30,32,51,0.08),0_0_0_1px_rgba(30,32,51,0.08)] lg:px-8 lg:py-3 transition-all duration-200 transform-gpu">
         <Link
           href="/atlas"
           prefetch={true}
@@ -51,7 +52,7 @@ export function NavPill() {
                 key={link.href}
                 href={link.href}
                 prefetch={true}
-                className={`relative px-4 py-1.5 text-[14px] font-medium rounded-full transition-colors duration-150 transform-gpu ${
+                className={`relative px-4 py-1.5 text-[14px] font-medium rounded-full transition-all duration-150 transform-gpu active:scale-[0.97] ${
                   isActive
                     ? 'bg-[#1e2033] text-white shadow-sm font-semibold'
                     : 'text-slate hover:text-ink hover:bg-white/70'
@@ -68,7 +69,7 @@ export function NavPill() {
           <Link
             href="/soc"
             prefetch={true}
-            className="hidden sm:inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-[#3a3f5c] to-[#1e2033] px-4 py-1.5 text-[13px] font-medium text-white shadow-sm transition-all duration-150 hover:shadow-md active:scale-95 transform-gpu"
+            className="hidden sm:inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-[#3a3f5c] to-[#1e2033] px-4 py-1.5 text-[13px] font-medium text-white shadow-sm transition-all duration-150 hover:shadow-md active:scale-[0.97] transform-gpu"
           >
             <ShieldAlert size={14} className="text-[#a5bbfc]" />
             <span>SOC Console</span>
@@ -87,29 +88,37 @@ export function NavPill() {
       </nav>
 
       {/* Mobile Drawer Menu */}
-      {open ? (
-        <div className="pointer-events-auto mx-auto mt-2 max-w-content rounded-2xl bg-white/95 backdrop-blur-lg p-5 shadow-2xl border border-slate-200 lg:hidden animate-fade-in-up duration-150 transform-gpu">
-          <ul className="flex flex-col gap-2">
-            {LINKS.map((link) => {
-              const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
-              return (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    prefetch={true}
-                    className={`block px-4 py-2.5 text-[15px] font-medium rounded-xl transition-colors duration-150 ${
-                      isActive ? 'bg-[#1e2033] text-white font-semibold' : 'text-slate hover:bg-[#f4f5fa]'
-                    }`}
-                    onClick={() => setOpen(false)}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ) : null}
+      <AnimatePresence>
+        {open ? (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            transition={{ type: 'spring', bounce: 0, duration: 0.4 }}
+            className="pointer-events-auto mx-auto mt-2 max-w-content rounded-2xl bg-white/70 backdrop-blur-2xl backdrop-saturate-[1.8] border-t border-white/40 p-5 shadow-2xl lg:hidden origin-top"
+          >
+            <ul className="flex flex-col gap-2">
+              {LINKS.map((link) => {
+                const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+                return (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      prefetch={true}
+                      className={`block px-4 py-2.5 text-[15px] font-medium rounded-xl transition-all duration-150 active:scale-[0.97] ${
+                        isActive ? 'bg-[#1e2033] text-white font-semibold' : 'text-slate hover:bg-[#f4f5fa]'
+                      }`}
+                      onClick={() => setOpen(false)}
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </header>
   );
 }
