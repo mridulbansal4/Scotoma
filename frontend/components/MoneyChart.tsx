@@ -50,7 +50,7 @@ export function MoneyChart({ rounds }: { rounds: RoundRecord[] }) {
   }));
 
   return (
-    <figure className="payloop-card">
+    <figure className="scotoma-card">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <figcaption className="text-eyebrow uppercase" style={{ color: 'var(--slate-gray)' }}>
           Evasion, false positives and fidelity, co-reported
@@ -71,7 +71,7 @@ export function MoneyChart({ rounds }: { rounds: RoundRecord[] }) {
 
       <div style={{ height: CHART_HEIGHT }} className="mt-8">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 12, right: 24, bottom: 24, left: 8 }}>
+          <ComposedChart data={data} margin={{ top: 12, right: 24, bottom: 48, left: 8 }}>
             <CartesianGrid stroke="var(--soft-bone)" vertical={false} />
             <XAxis
               dataKey="round"
@@ -111,7 +111,7 @@ export function MoneyChart({ rounds }: { rounds: RoundRecord[] }) {
                 fontSize: 13,
               }}
             />
-            <Legend wrapperStyle={{ fontSize: 13 }} />
+            <Legend wrapperStyle={{ fontSize: 13, paddingTop: '20px' }} verticalAlign="bottom" height={40} />
 
             {data
               .filter((point) => point.rejected)

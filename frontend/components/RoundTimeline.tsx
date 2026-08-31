@@ -1,5 +1,6 @@
 import type { RoundRecord } from '@/lib/artifacts';
 import { percent, rate } from '@/lib/format';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 const REJECTED = 'FIDELITY_REJECTED';
 
@@ -11,34 +12,47 @@ export function RoundTimeline({ rounds }: { rounds: RoundRecord[] }) {
         return (
           <article
             key={record.round}
-            className="rounded-stadium bg-lifted p-6"
-            style={{ border: rejected ? '1.5px solid var(--signal-orange)' : 'none' }}
+            className={`rounded-xl p-6 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md border ${
+              rejected
+                ? 'bg-amber-50/40 border-amber-200/80'
+                : 'bg-white border-slate-200/80 shadow-sm'
+            }`}
           >
-            <p className="text-eyebrow uppercase" style={{ color: 'var(--slate-gray)' }}>
-              Round {record.round + 1}
-            </p>
-            <p
-              className="mt-2 text-subhead uppercase"
-              style={{ color: rejected ? 'var(--signal-orange)' : 'var(--ink-black)' }}
-            >
-              {record.status.replace(/_/g, ' ')}
-            </p>
-            <p className="payloop-readout mt-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Round {record.round + 1}
+              </span>
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                  rejected
+                    ? 'bg-amber-100 text-amber-800 border border-amber-200/80'
+                    : 'bg-emerald-100/80 text-emerald-800 border border-emerald-200/80'
+                }`}
+              >
+                {rejected ? <AlertCircle size={12} /> : <CheckCircle2 size={12} />}
+                <span>{record.status.replace(/_/g, ' ')}</span>
+              </span>
+            </div>
+
+            <p className="mt-4 font-mono text-3xl font-semibold tracking-tight text-[#1e2033]">
               {rejected ? rate(record.fidelity_composite, 2) : percent(record.evasion_active)}
             </p>
-            <p className="mt-2 text-data" style={{ color: 'var(--slate-gray)' }}>
+            <p className="mt-1 text-xs text-slate-500 font-medium">
               {rejected
-                ? 'behavioural composite at rejection'
-                : `evasion on the active campaign · blind ${percent(record.evasion_blind)}`}
+                ? 'Behavioural composite at rejection'
+                : `Evasion active campaign • Blind ${percent(record.evasion_blind)}`}
             </p>
-            <p className="mt-4 text-data" style={{ color: 'var(--slate-gray)' }}>
-              {record.proposals_valid}/{record.proposals_total} proposals valid ·{' '}
-              {record.campaigns.length} campaigns
-            </p>
+
+            <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
+              <span>{record.proposals_valid}/{record.proposals_total} valid</span>
+              <span>{record.campaigns.length} campaigns</span>
+            </div>
+
             {record.suspicious_pr_auc ? (
-              <p className="mt-3 text-data" style={{ color: 'var(--signal-orange)' }}>
-                SUSPICIOUS_PR_AUC — treated as a defect, not a result.
-              </p>
+              <div className="mt-3 rounded-lg bg-rose-100/60 p-2.5 border border-rose-200/80 text-xs font-semibold text-rose-800 flex items-center gap-1.5">
+                <AlertCircle size={14} className="shrink-0" />
+                <span>SUSPICIOUS PR-AUC — treated as defect</span>
+              </div>
             ) : null}
           </article>
         );

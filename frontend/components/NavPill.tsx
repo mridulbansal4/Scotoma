@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Search, X } from 'lucide-react';
+import { Menu, Search, X, ShieldAlert } from 'lucide-react';
 import { useState } from 'react';
 import { ScotomaMark } from './ScotomaMark';
 
@@ -14,41 +14,59 @@ const LINKS = [
   { href: '/loop', label: 'The Loop' },
 ];
 
-const ICON_SIZE = 20;
+const ICON_SIZE = 18;
 
 export function NavPill() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="fixed inset-x-0 top-6 z-50 px-4 lg:px-12">
-      <nav className="mx-auto flex max-w-content items-center justify-between rounded-pill bg-white px-5 py-3 shadow-lift lg:px-10 lg:py-4">
-        <Link href="/atlas" className="flex items-center gap-3 text-ink" aria-label="Scotoma home">
-          <ScotomaMark size={26} />
-          <span className="text-navlink font-medium">Scotoma</span>
+    <header className="fixed inset-x-0 top-0 z-50 pt-4 px-4 lg:px-8 pointer-events-none">
+      <nav className="pointer-events-auto mx-auto flex max-w-content items-center justify-between rounded-full bg-white/80 backdrop-blur-md px-4 py-2.5 shadow-[0_4px_25px_-5px_rgba(30,32,51,0.08),0_0_0_1px_rgba(30,32,51,0.08)] lg:px-8 lg:py-3 transition-all duration-300">
+        <Link href="/atlas" className="flex items-center gap-3 text-ink group" aria-label="Scotoma home">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1e2033] text-white shadow-sm transition-transform duration-300 group-hover:scale-105">
+            <ScotomaMark size={20} />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[16px] font-semibold tracking-tight text-[#1e2033] leading-none">Scotoma</span>
+            <span className="text-[11px] font-medium text-slate tracking-wide">ADVERSARIAL ENGINE</span>
+          </div>
         </Link>
 
-        <div className="hidden items-center gap-12 lg:flex">
-          {LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-navlink"
-              style={{ color: pathname === link.href ? 'var(--ink-black)' : 'var(--slate-gray)' }}
-            >
-              {link.label}
-            </Link>
-          ))}
+        {/* Desktop Navigation Links with snappy 0ms active pill highlight */}
+        <div className="hidden items-center gap-1.5 lg:flex bg-[#f4f5fa] p-1 rounded-full border border-slate-200/50">
+          {LINKS.map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`relative px-4 py-1.5 text-[14px] font-medium rounded-full transition-all duration-150 ${
+                  isActive
+                    ? 'bg-[#1e2033] text-white shadow-sm'
+                    : 'text-slate hover:text-ink hover:bg-white/70'
+                }`}
+              >
+                <span className="relative z-10">{link.label}</span>
+              </Link>
+            );
+          })}
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="hidden h-12 w-12 items-center justify-center rounded-pill border border-ink/20 lg:flex">
-            <Search size={ICON_SIZE} aria-hidden />
-          </span>
+        {/* Action Controls */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/soc"
+            className="hidden sm:inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-[#3a3f5c] to-[#1e2033] px-4 py-1.5 text-[13px] font-medium text-white shadow-sm transition-all duration-200 hover:shadow-md active:scale-95"
+          >
+            <ShieldAlert size={14} className="text-[#a5bbfc]" />
+            <span>SOC Console</span>
+          </Link>
+          
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
-            className="flex h-12 w-12 items-center justify-center rounded-pill border border-ink/20 lg:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f4f5fa] text-[#1e2033] border border-slate-200/60 lg:hidden"
             aria-label={open ? 'Close menu' : 'Open menu'}
             aria-expanded={open}
           >
@@ -57,19 +75,30 @@ export function NavPill() {
         </div>
       </nav>
 
+      {/* Mobile Drawer Menu */}
       {open ? (
-        <div className="mx-auto mt-3 max-w-content rounded-stadium bg-white p-6 shadow-card lg:hidden">
-          <ul className="flex flex-col gap-4">
-            {LINKS.map((link) => (
-              <li key={link.href}>
-                <Link href={link.href} className="text-navlink" onClick={() => setOpen(false)}>
-                  {link.label}
-                </Link>
-              </li>
-            ))}
+        <div className="pointer-events-auto mx-auto mt-2 max-w-content rounded-2xl bg-white/95 backdrop-blur-lg p-5 shadow-2xl border border-slate-200 lg:hidden">
+          <ul className="flex flex-col gap-2">
+            {LINKS.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className={`block px-4 py-2.5 text-[15px] font-medium rounded-xl transition-colors ${
+                      isActive ? 'bg-[#1e2033] text-white' : 'text-slate hover:bg-[#f4f5fa]'
+                    }`}
+                    onClick={() => setOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}
-    </div>
+    </header>
   );
 }
+

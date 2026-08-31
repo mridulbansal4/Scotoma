@@ -37,7 +37,7 @@ export function ScopeMatrix({ data }: { data: ScopeMatrixData }) {
         ))}
       </div>
 
-      <div className="payloop-scroll-x mt-6">
+      <div className="scotoma-scroll-x mt-6">
         <table className="w-full min-w-[560px] border-separate border-spacing-1">
           <thead>
             <tr className="text-eyebrow uppercase" style={{ color: 'var(--slate-gray)' }}>
