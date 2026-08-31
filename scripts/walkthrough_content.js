@@ -37,12 +37,20 @@ add(
   h1("1. The gap this addresses"),
   p("A fraud model is validated against the fraud that has already been seen. That is a sound way to measure yesterday and a poor way to anticipate tomorrow. The failure mode is specific: a detector can hold excellent aggregate metrics while being structurally blind to an attack class that no historical label covers, and nobody discovers the blind spot until it is exploited at volume."),
   p("Two conditions make this worse in current payments. Attack surface is expanding across rails that share entities but not visibility, so a campaign can be distributed across card, instant-payment and agentic channels and appear unremarkable to any single participant. And agent-initiated commerce introduces vectors, including payment mandates, attestations and cart hashes, for which no historical corpus exists at all."),
+  rich([["The economics argue against blunt defences. Global card fraud losses reached 33.41 billion dollars in 2024 on 51.92 trillion dollars of volume, while ", {}],
+        ["false declines cost merchants 50.7 billion dollars across four markets in 2022", { b: true }],
+        [". The larger number is on the side of the customers who were refused wrongly, which is why this system reports cost per 100,000 events rather than a catch rate, and why nothing below the top band blocks autonomously.", {}]]),
   p("Scotoma addresses the measurement problem rather than the blocking problem. It generates adversarial traffic, tests whether that traffic is realistic enough to be worth scoring, measures precisely which vectors the detector misses, and repeats with the survivors. The output is a blind-spot map with numbers attached."),
+  rich([["The claim this document defends is deliberately narrow. ", {}],
+        ["Scotoma measures and shrinks a detector's blind spots. It does not claim to make anyone monotonically safer.", { b: true }],
+        [" Every figure below is reported against that sentence.", {}]]),
 
   h1("2. System architecture"),
-  p("Four stages run in sequence, all offline. The loop controller closes them."),
-  figure("fig1_architecture.png", 600, 305),
-  caption("fig", "The closed loop. The fidelity gate sits between generation and scoring so that unrealistic traffic never reaches the detector, which is what stops the loop optimising against its own artefacts."),
+  rich([["Four stages run in sequence, all offline. The loop controller closes them. The organising rule is simple: ", {}],
+        ["all heavy cognition is offline, and the live rail is arithmetic.", { b: true }],
+        [" Language-model reasoning, parameter search, graph simulation, fidelity testing and retraining are batch work. The inline path holds a compiled model, a probabilistic-structure lookup and a hash comparison.", {}]]),
+  figure("fig1_architecture.png", 545, 277),
+  caption("fig", "The closed loop. The gate sits between generation and scoring, so unrealistic traffic never reaches the detector."),
   p("The ordering carries the argument. If generated traffic went straight to the detector, the loop would converge on attacks that are easy to generate rather than attacks that are realistic, and every downstream metric would describe an artefact. Placing the gate before the detector means a batch must first look like plausible payment traffic and only then gets to be difficult."),
   table(W3, [
     ["Component", "Implementation", "Status"],
@@ -56,7 +64,7 @@ add(
     ["Party-scope projection", "issuer, acquirer and network masks", "built"],
     ["Red agent", "LLM proposals with offline evolutionary fallback", "built, offline in this run"],
   ], ["l","l","l"]),
-  caption("tab", "Implemented components. Channel B is built and was disabled by its own lift bar during this run, which Section 6.5 quantifies."),
+  caption("tab", "Implemented components. Channel B disabled itself on measured lift, quantified in Section 6.5."),
 );
 
 /* ------------------------------------------------------- 3 attack surface */
@@ -82,13 +90,14 @@ add(
   ], ["l","l","l","r"]),
   caption("tab", "The twelve vectors with live simulators. V07 is additionally held out of every training pool as the blind vector."),
   p("Four of the twelve are agentic. That concentration is deliberate and it is also where the honesty burden is highest: no public transaction corpus contains a payment mandate, an attestation or a cart hash, because the standards that define them are still arriving. Those four vectors are therefore generated from protocol structure rather than fitted to observed data, and Section 9 states the consequence for the detector."),
-  p("The registry is validated at import. A malformed vector, a duplicate identifier or a count other than the declared 32 aborts the process rather than degrading quietly."),
 );
 
 /* ---------------------------------------------------------- 4 fidelity */
 add(
   h1("4. Simulation fidelity"),
-  p("Generated attack traffic is worthless as a test if it does not resemble payment traffic, and the usual failure is subtle: marginal distributions match while the sequence structure inside an entity is destroyed. The gate therefore checks six properties, and a batch passes only if every active layer passes."),
+  rich([["Generated attack traffic is worthless as a test if it does not resemble payment traffic, and the usual failure is subtle: marginal distributions match while the sequence structure inside an entity is destroyed. This is a measured property of a class of generators, not a hypothetical. A 2026 benchmark shows ", {}],
+        ["row-independent generators degrade behavioural fraud signal 24 to 100 times while train-synthetic-test-real AUROC stays near baseline", { b: true }],
+        [", which means the standard quality check passes while the thing a fraud model needs has been destroyed. The gate therefore checks six properties, and a batch passes only if every active layer passes.", {}]]),
   p("One of the marginal, joint and adversarial layers is rotated into shadow each round. A shadow layer is evaluated and reported but not enforced, so a generator cannot be tuned against a fixed set of six checks."),
   table(W5, [
     ["Layer", "Statistic", "Threshold", "Scotoma", "Ablation"],
@@ -108,7 +117,7 @@ add(
         ["negative at -0.1192", { b: true }],
         [", against 0.0847 for the reference: row-independent generation does not merely weaken within-entity timing structure, it inverts it. The gate rejects that batch, which is the demonstration that the gate discriminates rather than approves.", {}]]),
   h2("4.1 Checking the gate against an external generator"),
-  p("A gate whose reference is the system's own output is marking its own homework. To test that, the reference was replaced with a partition of the Sparkov corpus, which is traffic Scotoma did not produce, and three rounds were run against it."),
+  p("A gate whose reference is the system's own output is marking its own homework. To test that, the reference was replaced with a partition of the Sparkov corpus, which is traffic this project did not generate, and three rounds were run against it."),
   rich([["Every round was rejected, at composite 13.20 to 13.33 against a threshold of 10.0. That result is reported here rather than buried, and so is the reason it is ", {}],
         ["not yet a fidelity verdict", { b: true }],
         [". The two comparable velocity ratios are 48.97 on the card key and 83.62 on the merchant key, but the two corpora describe different worlds: the Sparkov partition carries 939 cards at 2.6985 events per card per day, while the Scotoma frame carries 34,152 cards at 0.2966. Each external card is roughly nine times busier. Comparing inter-event-time spread across populations of that density measures the density gap first and realism second. The autocorrelation ratio, which is scale-free, sits at 1.40 and is close to parity.", {}]]),
@@ -123,19 +132,23 @@ add(
   p("Training respects a 30-day label embargo, so the model is fitted only on labels that would actually have been available at the time of the decision. Chargeback labels arrive late in practice, and a model trained on labels from the future reports a score it could never have achieved in production."),
   h2("5.1 Calibration and the operating point"),
   p("Scores are converted to decisions through an Elkan cost-sensitive threshold derived from four constants: a 25.00 chargeback fee, a 0.22 merchant margin, a 0.32 attrition probability and an 1,800.00 customer lifetime value. A threshold derived from miscalibrated posteriors is wrong, and every cost figure derived from it is wrong with it, so calibration is measured rather than assumed."),
-  figure("fig4_calibration.png", 600, 256),
+  figure("fig4_calibration.png", 540, 230),
   caption("fig", "Left: reliability on the simulated corpus, bins with at least 30 events, Brier improving from 0.003029 to 0.001320 under Platt scaling. Right: the calibrator choice measured on ULB, the one genuinely observed corpus used in this work."),
   rich([["Platt scaling was chosen over isotonic regression, and the choice was tested rather than asserted. On ULB, at a real 0.173 percent base rate, isotonic costs ", {}],
         ["0.0251 PR-AUC", { b: true }],
         [" because it is not monotonic and therefore does not preserve ranking, it is worse on mass-weighted calibration error (0.000181 against 0.000172), and it pins 2.56 percent of scores at exactly zero or one. A posterior of exactly one asserts certainty, and a cost-sensitive threshold cannot price certainty.", {}]]),
-  p("Decisions fall into four bands: approve below 0.30, step-up to 3-D Secure to 0.70, hold to 0.90, and decline with a SAR queue entry above 0.90. Nothing below 0.90 blocks autonomously, so the consequential action always has a human in the loop."),
+  p("Decisions fall into four bands: approve below 0.30, step-up to 3-D Secure to 0.70, hold to 0.90, and decline with a SAR queue entry above 0.90. Nothing below 0.90 blocks autonomously, so the consequential action always has a human in the loop. Autonomous blocking is a commercial and regulatory hazard, and given the false-decline economics in Section 1 it destroys more value than it saves."),
+  p("Every alert carries reason codes. TreeSHAP runs on the production model itself rather than on a surrogate, and the top contributing features are mapped through a fixed dictionary to a fixed sentence, so two analysts reading the same alert see the same explanation. A surrogate model would explain a different model from the one that made the decision, which is not an explanation."),
 );
 
 /* ----------------------------------------------------------- 6 efficacy */
 add(
   new Paragraph({ children: [new PageBreak()] }),
   h1("6. Efficacy"),
-  p("What follows is measured on run 2026-08-31-final: 180 simulated days, three loop rounds, seed 42. Detection is reported on precision-oriented metrics. ROC-AUC is omitted from the headline deliberately, because at fraud prevalence it flatters every model and moves very little when the model is operationally wrong."),
+  p("What follows is measured on run 2026-08-31-final: 180 simulated days, three loop rounds, seed 42. Detection is reported on precision-oriented metrics."),
+  rich([["ROC-AUC is deliberately not the headline, and there is a published figure that shows why. On the ULB dataset the same model scores ", {}],
+        ["0.957 ROC-AUC against 0.708 PR-AUC", { b: true }],
+        [". At fraud prevalence the two metrics tell different stories, and only one of them moves when the alert queue becomes unusable.", {}]]),
   h2("6.1 Headline detection metrics"),
   table(W3, [
     ["Metric", "Value", "Reading"],
@@ -149,11 +162,13 @@ add(
     ["Model scoring p99", "0.0939 ms", "measured, ONNX plus Platt"],
   ], ["l","r","l"]),
   caption("tab", "Headline metrics. The two latency rows cover model scoring only and exclude feature assembly and the feature-store lookup, which Section 8 addresses."),
-  p("Recall of 0.7554 at 95 percent precision is the number an operations team would care about most: it says roughly three quarters of fraud is caught at a precision level where the alert queue remains workable. The FP to TP ratio of 0.021 says the same thing from the other side, at roughly one false positive per fifty catches."),
+  rich([["Recall of 0.7554 at 95 percent precision is the number an operations team would care about most: roughly three quarters of fraud caught at a precision level where the queue remains workable. The FP to TP ratio of ", {}],
+        ["0.021", { b: true }],
+        [" is favourable against a production benchmark of 13 false positives per true positive, and it should be read with a caveat: it is measured against generated campaigns at a realised prevalence set by this run, not against a live portfolio mix. The direction is meaningful, the absolute value is not transferable.", {}]]),
 
   h2("6.2 Per-vector recall, including where it fails"),
   p("Aggregate metrics hide exactly the failure this system exists to find. The per-vector view is therefore the more important one."),
-  figure("fig2_per_vector_recall.png", 590, 313),
+  figure("fig2_per_vector_recall.png", 530, 281),
   caption("fig", "Recall by vector on the active campaign. Green clears the 0.60 bar, orange falls below 0.25. V07 is the blind holdout vector and never enters any training pool."),
   p("The pattern is coherent rather than random, and it is the main analytical result of the run. High-volume vectors with a sharp local signature are caught: enumeration at 0.9114, BIN attack at 0.8810, APP scam at 0.9722 and UPI mandate abuse at 0.9729 all clear the bar comfortably. These attacks concentrate activity on one entity in a short window, which is precisely what point-in-time velocity features are shaped to see."),
   rich([["Four vectors fail badly, and they fail for one reason. ", {}],
@@ -164,13 +179,16 @@ add(
         [". A detector that had memorised the generator rather than learned behaviour would score near zero here; a detector with no generalisation problem would score near the vectors it trains on. Neither is true, and 0.2050 is the honest middle.", {}]]),
 
   h2("6.3 Round progression"),
-  table(W5, [
-    ["Round", "PR-AUC active", "PR-AUC blind", "Evasion active", "FPR legit"],
-    ["0", "0.5036", "0.0123", "0.8644", "0.000171"],
-    ["1", "0.7972", "0.0009", "1.0000", "0.000000"],
-    ["2", "0.2754", "0.0051", "0.9264", "0.000230"],
-  ], ["l","r","r","r","r"]),
-  caption("tab", "Three rounds. Evasion is the share of campaign events that stayed under the decision threshold. The fidelity composite held at 1.0389, 1.0439 and 1.0341, so all three batches were realistic by the gate's own measure."),
+  table([1500,1520,1520,1560,1580,1680], [
+    ["Round", "PR-AUC active", "Evasion active", "Evasion blind", "FPR legit", "Cost per 100k"],
+    ["0", "0.5036", "0.8644", "0.8447", "0.000171", "81,080"],
+    ["1", "0.7972", "1.0000", "1.0000", "0.000000", "834,633"],
+    ["2", "0.2754", "0.9264", "0.8012", "0.000230", "94,102"],
+  ], ["l","r","r","r","r","r"]),
+  caption("tab", "Three rounds, with the blind-holdout evasion rate reported beside the active one and the fidelity composite co-reported at 1.0389, 1.0439 and 1.0341. Evasion is the share of campaign events that stayed under the decision threshold."),
+  rich([["The blind column is the one that answers the circularity objection, and it is reported because it is unflattering. Evasion on the blind holdout stays between ", {}],
+        ["0.8012 and 1.0000", { b: true }],
+        [" across all three rounds. The loop is not driving blind evasion down. A system that reported only the active campaign could show a curve bending in the right direction while the holdout never moved, and that is precisely the artefact this column exists to expose.", {}]]),
   p("This table is reported as measured and it does not show clean monotonic improvement. Two things in it deserve direct comment."),
   p("First, PR-AUC on the active campaign moves from 0.5036 to 0.7972 and then falls to 0.2754. The loop is adversarial, so this is expected behaviour rather than instability: the controller feeds the hardest surviving campaigns into the next training pool, and the red agent conditions the next proposals on what evaded. Round 2 is a harder examination than round 0, and a falling score against a rising difficulty is not the same as a degrading model. It does mean that a single round-over-round PR-AUC series is not by itself evidence of improvement, and this document does not present it as such."),
   rich([["Second, round 1 is the instructive failure. PR-AUC is high at 0.7972 while evasion is ", {}], ["1.0000", { b: true }],
@@ -178,7 +196,7 @@ add(
 
   h2("6.4 Visibility asymmetry"),
   p("The same detector was refitted under three visibility masks, each seeing only the fields one party would actually hold. This operationalises a known asymmetry rather than discovering it."),
-  figure("fig3_party_scope.png", 400, 261),
+  figure("fig3_party_scope.png", 360, 235),
   caption("fig", "Per-vector recall under issuer, acquirer and network visibility. Blank cells are vectors the party cannot observe at all."),
   p("UPI mandate abuse reaches 0.7354 at network scope and is not observable at issuer or acquirer scope. BIN attack is visible to all three but weakly, at 0.1456 for the network and 0.0002 for the issuer. The operational reading is that several of these attacks are not detectable by any single institution regardless of model quality, which is a statement about data access rather than about modelling."),
 
@@ -188,7 +206,7 @@ add(
         [", so the channel was switched off automatically. It was then scoped against IBM AML HI-Small, a corpus with labelled laundering motifs that Scotoma did not generate: 515,080 accounts and 5,078,345 edges. Laundering sources there carry 1.42 times the out-degree of legitimate ones, so the aggregate structure genuinely differs, but a degree and reciprocity baseline separates individual edges at only ", {}],
         ["0.0074 PR-AUC lift", { b: true }],
         [" over the base rate, roughly four times short of the same 0.03 bar.", {}]]),
-  p("The conclusion is that a graph channel would have to beat simple structural features fourfold before it earns its complexity here. Publishing that number is more useful than shipping a decorative graph model with an unmeasured lift, and it is consistent with the vectors in Section 6.2 that need relational signal: the requirement is real, and the current evidence says a naive graph model does not meet it."),
+  p("This is consistent with the published position that boosted trees on neighbour-aggregated features beat the best graph neural network by 2.0 points of AUROC and 12.9 percent of AUPRC on a graph anomaly benchmark, which is why the built channel aggregates neighbour features rather than training a deep graph model. The conclusion is that a graph channel would have to beat simple structural features fourfold before it earns its complexity here. Publishing that number is more useful than shipping a decorative graph model with an unmeasured lift, and it is consistent with the vectors in Section 6.2 that need relational signal: the requirement is real, and the current evidence says a naive graph model does not meet it."),
 
   h2("6.6 External corpora"),
   p("Three public corpora were used, and their provenance differs in a way that matters for how each result should be read."),
@@ -200,17 +218,21 @@ add(
   ], ["l","r","l","l"]),
   caption("tab", "External corpora. Only ULB is observed transaction data. Sparkov is described by its publisher as simulated transactions produced by the Sparkov generator, and IBM AML is a generated benchmark."),
   p("On the Sparkov partitions, a detector fitted on 778,005 rows reaches PR-AUC 0.2898 against a 0.60 percent base rate, roughly a 48-fold lift, and transfers to a strictly later holdout at PR-AUC 0.0653. That fall across a six to twelve month gap is genuine temporal drift, and it is reported because it is the baseline any train-on-generated claim has to be measured against."),
-  p("The value of an external corpus here is not that it is real. It is that Scotoma did not produce it, which is what breaks the circularity in a fidelity comparison. Where this document refers to external traffic it means traffic from an independent generator, except for ULB, which is observed."),
+  p("The value of an external corpus here is not that it is real. It is that Scotoma did not produce it, which is what breaks the circularity in a fidelity comparison. Where this document refers to external traffic it means traffic from a generator this project did not build, except for ULB, which is observed."),
 );
 
 /* ------------------------------------------------------------ 7 novelty */
 add(
   h1("7. What is different"),
   p("The individual components are established. Gradient boosting on velocity features, isolation forests, cost-sensitive thresholds and synthetic data quality metrics are all known techniques. The contribution is the arrangement, and specifically three properties of it."),
-  p("The gate sits before the detector, so difficulty and realism are separated. A generated batch can only become part of the test if it first passes as plausible traffic, which removes the standard failure of adversarial generation where the system converges on artefacts that are hard to detect precisely because they are unrealistic."),
   p("The gate rejects its own side. The GaussianCopula ablation is not a straw man run for the report; it is a batch produced by the project, submitted to the project's own gate, and refused on five of six layers. A quality gate that has never rejected anything is a decoration."),
   p("Failures are retained rather than discarded. The controller keeps the hardest surviving campaigns, adds them to the training pool, and conditions the next round's proposals on exactly what evaded. The measurement is not an evaluation appended to the end of a pipeline, it is the input to the next iteration."),
-  p("The claim is not that no one has built adversarial testing for fraud. It is that this specific combination, a realism gate that can reject its own output, positioned between generation and detection, with the survivors driving the next round, is a workflow that produces a blind-spot map instead of a leaderboard score."),
+  p("Two further pieces are worth naming because they are concrete rather than architectural."),
+  rich([["The cart-hash comparison turns prompt injection into a decidable question. An agent-initiated purchase carries a hash of the cart at the moment of intent and again at settlement; if ", {}],
+        ["the two hashes differ, the cart changed between the user agreeing and the payment completing", { b: true }],
+        [". That is a deterministic boolean, not a probability, and it costs a hash comparison on the inline path. It is the difference between describing agentic fraud and detecting a specific instance of it.", {}]]),
+  p("Party-scope projection is the second. The same detector is refitted under three visibility masks and the result quantifies which vectors an issuer simply cannot see. The asymmetry itself is well known in the industry. Building it as a code-level mask that produces a number per vector per party is not standard practice, so the correct claim is that this operationalises a known asymmetry rather than discovering one."),
+  p("The claim is not that no one has built adversarial testing for fraud. It is that this specific combination, a realism gate that can reject its own output, positioned between generation and detection, with the survivors driving the next round and a visibility mask on the measurement, produces a blind-spot map instead of a leaderboard score."),
 );
 
 /* -------------------------------------------------------- 8 feasibility */
@@ -229,9 +251,9 @@ add(
   caption("tab", "Workload separation. The expensive adversarial machinery is entirely offline; only scoring and banding are on the inline path."),
   rich([["The measured scoring latency is 0.0255 ms at p50 and 0.0939 ms at p99 over 10,000 iterations with 500 warmup, for the compiled model plus Platt calibration. That figure is honest about what it excludes: it does not include feature assembly, and it does not include the feature-store lookup, which could not be measured in this run because the Redis instance was unreachable. The 50 ms inline budget and the 5 ms feature-lookup target are therefore ", {}],
         ["design constraints, not measured results", { b: true }],
-        [". A complete inline latency claim requires the feature path to be measured, and this document does not make one.", {}]]),
+        [". The measurement was taken on a single Intel laptop core running Python 3.11, which is the right question to ask of any latency figure, and it is not production hardware. A complete inline latency claim requires the feature path to be measured on representative infrastructure, and this document does not make one.", {}]]),
   h2("8.1 Where this would sit"),
-  p("Scotoma is not a replacement for a mature fraud decisioning system and is not positioned as one. It is a continuous adversarial testing layer that would sit beside such a system and consume its model artefacts."),
+  p("Scotoma is not a replacement for a mature fraud decisioning system such as Mastercard Decision Intelligence, and is not positioned as one. Those systems are trained on network-scale labelled history that this project does not have and cannot simulate. Scotoma is a continuous adversarial testing layer that would sit beside such a system, consume its model artefacts, and report where they are blind."),
   bullet("Model validation. Generate campaigns against a candidate model before promotion, and report per-vector recall rather than a single aggregate."),
   bullet("Blind-spot discovery. The per-vector table in Section 6.2 is the deliverable: it names which attack classes a current model cannot see."),
   bullet("Regression testing. Campaigns that once evaded become fixed test cases, so a model change that reopens a closed blind spot is caught before promotion."),
@@ -255,7 +277,7 @@ add(
   p("What would be required for production validation is a shadow deployment against live traffic with a measured feature path, a fixed external benchmark scored every round, and a density-normalised fidelity reference. None of those are present here."),
 
   h1("10. Summary"),
-  p("Scotoma generates attacks across six payment rails, refuses to score them unless they survive a six-layer realism gate that provably rejects a weaker generator, detects them with a calibrated three-channel model, and reports where it fails at the granularity of individual attack vectors. It catches high-velocity attacks well, at 0.9114 to 0.9729 recall on four vectors, and it fails on distributed low-velocity attacks, at 0.0099 to 0.2009 on four others, for a reason the architecture explains. It measures its own graph channel and switches it off. It quantifies what a single institution cannot see."),
+  p("Scotoma generates attacks across six payment rails, refuses to score them unless they survive a gate that provably rejects a weaker generator, detects them with a calibrated three-channel model, and reports where it fails per vector. It catches high-velocity attacks at 0.9114 to 0.9729 recall and fails on distributed low-velocity attacks at 0.0099 to 0.2009, for a reason the architecture explains."),
   p("The contribution is the loop, not a leaderboard position. The most valuable output is not the aggregate score, it is the list of attacks the detector cannot see and the evidence for why."),
 
   h1("References"),
