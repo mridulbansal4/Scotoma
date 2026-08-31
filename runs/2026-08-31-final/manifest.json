@@ -3,14 +3,14 @@
   "blind_holdout_vectors": [
     "V07"
   ],
-  "config_hash": "05eb7b819b4b88d6",
+  "config_hash": "c487f10f96bd32ed",
   "cost_matrix": {
     "chargeback_fee": 25.0,
     "customer_ltv": 1800.0,
     "merchant_margin": 0.22,
     "p_attrition": 0.32
   },
-  "git_sha": "d7dccd4f443da2dd466e3f08af76f2cc2ceaf3a3",
+  "git_sha": "c86ffe6a7fa9d11efa3be3ea973e119930556152",
   "gnn_enabled": true,
   "gnn_min_lift_prauc": 0.03,
   "host": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel, Python 3.11.9",
@@ -20,9 +20,9 @@
     "hold_max": 0.9,
     "stepup_max": 0.7
   },
-  "loop_rounds": 3,
+  "loop_rounds": 6,
   "population_seed": 42,
   "run_id": "2026-08-31-final",
   "sim_days": 180,
-  "started_ts": "2026-08-31T13:10:44.480404+00:00"
+  "started_ts": "2026-08-31T14:33:26.513967+00:00"
 }
